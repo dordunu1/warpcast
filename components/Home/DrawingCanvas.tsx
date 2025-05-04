@@ -380,7 +380,7 @@ export default function DrawingCanvas({ onExport }: { onExport?: (dataUrl: strin
               ×
             </button>
             <div className="text-2xl font-extrabold mb-1 bg-gradient-to-r from-pink-500 to-pink-400 bg-clip-text text-transparent">Mint Your 1/1 NFT</div>
-            <div className="text-sm text-gray-700 mb-4 text-center">You're about to mint your artwork as a unique 1/1 NFT. Each piece is one-of-a-kind and will be permanently stored on the blockchain.</div>
+            <div className="text-sm text-gray-700 mb-4 text-center">You&apos;re about to mint your artwork as a unique 1/1 NFT. Each piece is one-of-a-kind and will be permanently stored on the blockchain.</div>
             {mintStep === "traits" && (
               <>
                 <div className="w-full bg-white/70 rounded-xl p-4 mb-4">
