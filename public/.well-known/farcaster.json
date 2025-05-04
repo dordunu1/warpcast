@@ -14,14 +14,14 @@
   "frame": {
     "version": "1",
     "name": "Games and Art",
-    "iconUrl": "https://chrismini.netlify.app/images/icon.png",
+    "iconUrl": "https://chrismini.netlify.app/images/icon.jpeg",
     "homeUrl": "https://chrismini.netlify.app",
     "imageUrl": "https://chrismini.netlify.app/images/feed.jpg",
     "screenshotUrls": [],
     "tags": ["monad", "farcaster", "miniapp", "games", "art"],
     "primaryCategory": "games",
     "buttonTitle": "Games and Art",
-    "splashImageUrl": "https://chrismini.netlify.app/images/splash.jpg",
+    "splashImageUrl": "https://chrismini.netlify.app/images/splash.jpeg",
     "splashBackgroundColor": "#ffffff",
     "webhookUrl": "https://chrismini.netlify.app/api/webhook"
   }

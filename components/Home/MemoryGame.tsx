@@ -6,7 +6,7 @@ import { monadTestnet } from "viem/chains";
 import { useMiniAppContext } from "@/hooks/use-miniapp-context";
 import html2canvas from "html2canvas";
 
-const CARD_IMAGES = Array.from({ length: 8 }, (_, i) => `/images/${i + 1}.jpg`);
+const CARD_IMAGES = Array.from({ length: 8 }, (_, i) => `/images/${i + 1}.jpeg`);
 const TOTAL_PAIRS = 8;
 const GRID_SIZE = 4;
 
@@ -144,7 +144,26 @@ export default function MemoryGame() {
       const gameNode = document.getElementById("memory-game-screenshot");
       if (!gameNode) throw new Error("Game area not found");
       const canvas = await html2canvas(gameNode);
-      const dataUrl = canvas.toDataURL("image/png");
+      // Add padding and random background color
+      const PADDING = 25;
+      const BG_COLORS = [
+        "#fffbe6", // light yellow
+        "#e0e7ff", // light blue
+        "#ffe4fa", // light pink
+        "#e0ffe4", // light green
+        "#f3e8ff"  // light purple
+      ];
+      const bgColor = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)];
+      const paddedCanvas = document.createElement("canvas");
+      paddedCanvas.width = canvas.width + PADDING * 2;
+      paddedCanvas.height = canvas.height + PADDING * 2;
+      const ctx = paddedCanvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
+        ctx.drawImage(canvas, PADDING, PADDING);
+      }
+      const dataUrl = paddedCanvas.toDataURL("image/png");
       const blob = await fetch(dataUrl).then(r => r.blob());
       // 2. Upload image to IPFS
       const formData = new FormData();

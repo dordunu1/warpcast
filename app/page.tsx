@@ -11,7 +11,7 @@ const frame = {
       type: "launch_frame",
       name: "Games and Art",
       url: APP_URL,
-      splashImageUrl: `${APP_URL}/images/splash.jpg`,
+      splashImageUrl: `${APP_URL}/images/splash.jpeg`,
       splashBackgroundColor: "#f7f7f7",
     },
   },
