@@ -363,7 +363,7 @@ export default function MemoryGame() {
         </div>
       )}
       <div className="flex flex-col items-center mt-4">
-        <img src="/images/profile.jpg" alt="Chris Wilder" className="w-12 h-12 rounded-full mb-2 border-2 border-gray-400" />
+        <img src="/images/profile.png" alt="Chris Wilder" className="w-12 h-12 rounded-full mb-2 border-2 border-gray-400" />
         <a href="https://x.com/chriswilder" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:underline text-center">
           Built by Chris Wilder
         </a>
