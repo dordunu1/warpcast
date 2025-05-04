@@ -6,7 +6,7 @@ import { monadTestnet } from "viem/chains";
 import { useMiniAppContext } from "@/hooks/use-miniapp-context";
 import html2canvas from "html2canvas";
 
-const CARD_IMAGES = Array.from({ length: 8 }, (_, i) => `/images/${i + 1}.png`);
+const CARD_IMAGES = Array.from({ length: 8 }, (_, i) => `/images/${i + 1}.jpg`);
 const TOTAL_PAIRS = 8;
 const GRID_SIZE = 4;
 
@@ -148,7 +148,7 @@ export default function MemoryGame() {
       const blob = await fetch(dataUrl).then(r => r.blob());
       // 2. Upload image to IPFS
       const formData = new FormData();
-      formData.append("file", blob, "game.png");
+      formData.append("file", blob, "game.jpg");
       const response = await fetch("https://api.pinata.cloud/pinning/pinFileToIPFS", {
         method: "POST",
         headers: {
@@ -363,7 +363,7 @@ export default function MemoryGame() {
         </div>
       )}
       <div className="flex flex-col items-center mt-4">
-        <img src="/images/profile.png" alt="Chris Wilder" className="w-12 h-12 rounded-full mb-2 border-2 border-gray-400" />
+        <img src="/images/profile.jpg" alt="Chris Wilder" className="w-12 h-12 rounded-full mb-2 border-2 border-gray-400" />
         <a href="https://x.com/chriswilder" target="_blank" rel="noopener noreferrer" className="text-xs text-gray-400 hover:underline text-center">
           Built by Chris Wilder
         </a>
