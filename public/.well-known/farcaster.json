@@ -3,9 +3,9 @@
   "description": "Play memory games and create art, then mint as NFTs on Monad testnet.",
   "ogTitle": "Games and Art Mini App",
   "ogDescription": "A two-in-one experience: memory games and art creation, with NFT minting.",
-  "ogImageUrl": "https://chrismni.netlify.app/images/feed.jpg",
+  "ogImageUrl": "https://chrismini.netlify.app/images/feed.jpg",
   "tagline": "Games + Art = Fun",
-  "heroImageUrl": "https://chrismni.netlify.app/images/feed.jpg",
+  "heroImageUrl": "https://chrismini.netlify.app/images/feed.jpg",
   "accountAssociation": {
     "header": "eyJmaWQiOjI2NTAwOCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGUwOGRkODY5MzU1ZDUyMjE0NDg5M2RiNkFkQ2Y2ZDU3NzdFZTQ2OTgifQ",
     "payload": "eyJkb21haW4iOiJjaHJpc21pbmkubmV0bGlmeS5hcHAifQ",
@@ -14,15 +14,15 @@
   "frame": {
     "version": "1",
     "name": "Games and Art",
-    "iconUrl": "https://chrismni.netlify.app/images/icon.png",
-    "homeUrl": "https://chrismni.netlify.app",
-    "imageUrl": "https://chrismni.netlify.app/images/feed.jpg",
+    "iconUrl": "https://chrismini.netlify.app/images/icon.png",
+    "homeUrl": "https://chrismini.netlify.app",
+    "imageUrl": "https://chrismini.netlify.app/images/feed.jpg",
     "screenshotUrls": [],
     "tags": ["monad", "farcaster", "miniapp", "games", "art"],
     "primaryCategory": "games",
     "buttonTitle": "Games and Art",
-    "splashImageUrl": "https://chrismni.netlify.app/images/splash.jpg",
+    "splashImageUrl": "https://chrismini.netlify.app/images/splash.jpg",
     "splashBackgroundColor": "#ffffff",
-    "webhookUrl": "https://chrismni.netlify.app/api/webhook"
+    "webhookUrl": "https://chrismini.netlify.app/api/webhook"
   }
 } 
