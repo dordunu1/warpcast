@@ -47,6 +47,9 @@ export default function MemoryGame() {
   const [mintMsg, setMintMsg] = useState("");
   const [ipfsHash, setIpfsHash] = useState<string>("");
   const [metadataHash, setMetadataHash] = useState<string>("");
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
+  const [shareLoading, setShareLoading] = useState(false);
 
   const { isConnected, address, chainId } = useAccount();
   const { data, isSuccess, isError, sendTransaction } = useSendTransaction();
@@ -226,6 +229,59 @@ export default function MemoryGame() {
     }
   };
 
+  const handleShareToFarcaster = async () => {
+    setShareLoading(true);
+    try {
+      const gameNode = document.getElementById("memory-game-screenshot");
+      if (!gameNode) throw new Error("Game area not found");
+      const canvas = await html2canvas(gameNode);
+      // Add padding and random background color (reuse mint logic)
+      const PADDING = 25;
+      const BG_COLORS = [
+        "#fffbe6", // light yellow
+        "#e0e7ff", // light blue
+        "#ffe4fa", // light pink
+        "#e0ffe4", // light green
+        "#f3e8ff"  // light purple
+      ];
+      const bgColor = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)];
+      const paddedCanvas = document.createElement("canvas");
+      paddedCanvas.width = canvas.width + PADDING * 2;
+      paddedCanvas.height = canvas.height + PADDING * 2;
+      const ctx = paddedCanvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
+        ctx.drawImage(canvas, PADDING, PADDING);
+      }
+      const dataUrl = paddedCanvas.toDataURL("image/png");
+      const imgurClientId = process.env.NEXT_PUBLIC_IMGUR_CLIENT_ID || "0c42b41cbbb1203";
+      const formData = new FormData();
+      formData.append("image", dataUrl.split(",")[1]); // base64 data only
+
+      const res = await fetch("https://api.imgur.com/3/image", {
+        method: "POST",
+        headers: {
+          Authorization: `Client-ID ${imgurClientId}`,
+          // DO NOT set Content-Type! Let the browser set it for FormData.
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error("Imgur upload failed: " + (data.data?.error || ""));
+      const imageUrl = data.data.link;
+      // Open Warpcast share intent
+      const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareMessage)}&embeds[]=${encodeURIComponent(imageUrl)}`;
+      window.open(url, "_blank");
+      setShowShareModal(false);
+      setShareMessage("");
+    } catch (e) {
+      alert("Failed to share image: " + ((e as any)?.message || "Unknown error"));
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
   return (
     <div id="memory-game-root" className="flex flex-col items-center justify-center w-full max-w-md mx-auto p-4 bg-black rounded-lg shadow-lg">
       <div className="text-xl font-extrabold text-pink-400 mb-4 text-center">
@@ -328,6 +384,41 @@ export default function MemoryGame() {
           >
             Play Again
           </button>
+          <button
+            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg text-lg mb-2"
+            onClick={() => setShowShareModal(true)}
+          >
+            Share to Farcaster
+          </button>
+          {showShareModal && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+              <div className="bg-white rounded-xl shadow-2xl p-4 w-[320px] flex flex-col items-center relative border border-purple-200">
+                <button
+                  className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center rounded-full bg-white/80 hover:bg-pink-100 border border-pink-200 text-pink-500 text-lg font-bold shadow-sm transition"
+                  onClick={() => setShowShareModal(false)}
+                  aria-label="Close"
+                >
+                  ×
+                </button>
+                <div className="text-base font-bold mb-2 text-purple-700 text-center">Share your moment on Farcaster</div>
+                <textarea
+                  className="w-full h-16 p-2 border border-purple-200 rounded mb-3 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-purple-300"
+                  placeholder="Add a custom message..."
+                  value={shareMessage}
+                  onChange={e => setShareMessage(e.target.value)}
+                  maxLength={200}
+                  style={{ minHeight: 40, maxHeight: 64 }}
+                />
+                <button
+                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm w-full disabled:opacity-50 transition"
+                  onClick={handleShareToFarcaster}
+                  disabled={shareLoading}
+                >
+                  {shareLoading ? "Sharing..." : "Share to Farcaster"}
+                </button>
+              </div>
+            </div>
+          )}
           {mintStatus === "success" && txHash && metadataHash && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
               <div className="bg-white rounded-2xl shadow-xl p-6 w-[380px] flex flex-col items-center relative">
