@@ -50,6 +50,7 @@ export default function MemoryGame() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
   const [shareLoading, setShareLoading] = useState(false);
+  const [shareLinkLoading, setShareLinkLoading] = useState(false);
 
   const { isConnected, address, chainId } = useAccount();
   const { data, isSuccess, isError, sendTransaction } = useSendTransaction();
@@ -282,6 +283,57 @@ export default function MemoryGame() {
     }
   };
 
+  const handleShareScoreLink = async () => {
+    setShareLinkLoading(true);
+    try {
+      const gameNode = document.getElementById("memory-game-screenshot");
+      if (!gameNode) throw new Error("Game area not found");
+      const canvas = await html2canvas(gameNode);
+      // Add padding and random background color (reuse mint logic)
+      const PADDING = 25;
+      const BG_COLORS = [
+        "#fffbe6", // light yellow
+        "#e0e7ff", // light blue
+        "#ffe4fa", // light pink
+        "#e0ffe4", // light green
+        "#f3e8ff"  // light purple
+      ];
+      const bgColor = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)];
+      const paddedCanvas = document.createElement("canvas");
+      paddedCanvas.width = canvas.width + PADDING * 2;
+      paddedCanvas.height = canvas.height + PADDING * 2;
+      const ctx = paddedCanvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
+        ctx.drawImage(canvas, PADDING, PADDING);
+      }
+      const dataUrl = paddedCanvas.toDataURL("image/png");
+      const imgurClientId = process.env.NEXT_PUBLIC_IMGUR_CLIENT_ID || "0c42b41cbbb1203";
+      const formData = new FormData();
+      formData.append("image", dataUrl.split(",")[1]); // base64 data only
+      const res = await fetch("https://api.imgur.com/3/image", {
+        method: "POST",
+        headers: {
+          Authorization: `Client-ID ${imgurClientId}`,
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error("Imgur upload failed: " + (data.data?.error || ""));
+      const imageUrl = data.data.link;
+      // Build the share link to the /share page
+      const shareUrl = `${window.location.origin}/share?img=${encodeURIComponent(imageUrl)}&score=${encodeURIComponent(score)}`;
+      const text = `I just scored ${score} in Games & Art! Can you beat me?`;
+      const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(shareUrl)}`;
+      window.open(url, "_blank");
+    } catch (e) {
+      alert("Failed to share score link: " + ((e as any)?.message || "Unknown error"));
+    } finally {
+      setShareLinkLoading(false);
+    }
+  };
+
   return (
     <div id="memory-game-root" className="flex flex-col items-center justify-center w-full max-w-md mx-auto p-4 bg-black rounded-lg shadow-lg">
       <div className="text-xl font-extrabold text-pink-400 mb-4 text-center">
@@ -369,27 +421,36 @@ export default function MemoryGame() {
       {(!isActive && matched.length === cards.length) && (
         <div className="w-full flex flex-col items-center mb-4">
           <div className="text-lg font-bold text-yellow-300 mb-2">Beat your current score!</div>
-          {isConnected && chainId === monadTestnet.id && (
+          <div className="grid grid-cols-2 gap-3 w-full mb-2">
+            {isConnected && chainId === monadTestnet.id && (
+              <button
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg text-lg disabled:opacity-50"
+                onClick={handleMint}
+                disabled={mintStatus === "loading"}
+              >
+                {mintStatus === "loading" ? "Minting..." : "Mint Score as NFT"}
+              </button>
+            )}
             <button
-              className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg text-lg mb-2 disabled:opacity-50"
-              onClick={handleMint}
-              disabled={mintStatus === "loading"}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg text-lg"
+              onClick={handleRestart}
             >
-              {mintStatus === "loading" ? "Minting..." : "Mint Score as NFT"}
+              Play Again
             </button>
-          )}
-          <button
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg text-lg mb-2"
-            onClick={handleRestart}
-          >
-            Play Again
-          </button>
-          <button
-            className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg text-lg mb-2"
-            onClick={() => setShowShareModal(true)}
-          >
-            Share to Farcaster
-          </button>
+            <button
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg text-lg"
+              onClick={() => setShowShareModal(true)}
+            >
+              Share to Farcaster
+            </button>
+            <button
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg text-lg"
+              onClick={handleShareScoreLink}
+              disabled={shareLinkLoading}
+            >
+              {shareLinkLoading ? "Sharing..." : "Share Score Link"}
+            </button>
+          </div>
           {showShareModal && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
               <div className="bg-white rounded-xl shadow-2xl p-4 w-[320px] flex flex-col items-center relative border border-purple-200">
