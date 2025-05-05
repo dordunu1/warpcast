@@ -56,7 +56,7 @@ export default function MemoryGame() {
   const { data, isSuccess, isError, sendTransaction } = useSendTransaction();
   const { switchChain, error: switchError } = useSwitchChain();
   const { connect, connectors, error: connectError } = useConnect();
-  const { isEthProviderAvailable } = useMiniAppContext();
+  const { isEthProviderAvailable, actions } = useMiniAppContext();
   const { data: balanceData } = useBalance({ address, chainId: monadTestnet.id });
 
   useEffect(() => {
@@ -270,12 +270,16 @@ export default function MemoryGame() {
       const data = await res.json();
       if (!data.success) throw new Error("Imgur upload failed: " + (data.data?.error || ""));
       const imageUrl = data.data.link;
-      // Open Warpcast share intent with iOS compatibility
-      const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareMessage)}&embeds[]=${encodeURIComponent(imageUrl)}`;
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isIOS) {
-        window.location.href = url;
+      
+      // Use Farcaster SDK's composeCast action instead of window.open
+      if (actions) {
+        await actions.composeCast({
+          text: shareMessage || `🎮 Just scored ${score} in Games & Art! 🎯 Think you can beat my score? Challenge accepted! 🏆 Play now and show me what you've got! 🚀`,
+          embeds: [imageUrl],
+        });
       } else {
+        // Fallback for non-Farcaster environment
+        const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareMessage)}&embeds[]=${encodeURIComponent(imageUrl)}`;
         window.open(url, "_blank");
       }
       setShowShareModal(false);
@@ -329,11 +333,16 @@ export default function MemoryGame() {
       // Build the share link to the /share page
       const shareUrl = `${window.location.origin}/share?img=${encodeURIComponent(imageUrl)}&score=${encodeURIComponent(score)}`;
       const text = `🎮 Just scored ${score} in Games & Art! 🎯 Think you can beat my score? Challenge accepted! 🏆 Play now and show me what you've got! 🚀`;
-      const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(shareUrl)}`;
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-      if (isIOS) {
-        window.location.href = url;
+      
+      // Use Farcaster SDK's composeCast action instead of window.open
+      if (actions) {
+        await actions.composeCast({
+          text,
+          embeds: [shareUrl],
+        });
       } else {
+        // Fallback for non-Farcaster environment
+        const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(shareUrl)}`;
         window.open(url, "_blank");
       }
     } catch (e) {
