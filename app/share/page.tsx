@@ -1,4 +1,5 @@
 import { Metadata } from "next";
+import { redirect } from "next/navigation";
 
 const MINIAPP_URL = process.env.NEXT_PUBLIC_MINIAPP_URL || "/";
 
@@ -23,18 +24,7 @@ export async function generateMetadata({ searchParams }: { searchParams: { img?:
   };
 }
 
-export default function SharePage({ searchParams }: { searchParams: { img?: string; score?: string } }) {
-  // Redirect to the miniapp URL instantly, but keep OG tags for social previews
-  return (
-    <html>
-      <head>
-        <meta httpEquiv="refresh" content={`0; url=${MINIAPP_URL}`} />
-      </head>
-      <body>
-        <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
-          <p>Redirecting to the game...</p>
-        </div>
-      </body>
-    </html>
-  );
+export default function SharePage() {
+  redirect(MINIAPP_URL);
+  return null;
 } 

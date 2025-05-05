@@ -324,7 +324,7 @@ export default function MemoryGame() {
       const imageUrl = data.data.link;
       // Build the share link to the /share page
       const shareUrl = `${window.location.origin}/share?img=${encodeURIComponent(imageUrl)}&score=${encodeURIComponent(score)}`;
-      const text = `I just scored ${score} in Games & Art! Can you beat me?`;
+      const text = `🎮 Just scored ${score} in Games & Art! 🎯 Think you can beat my score? Challenge accepted! 🏆 Play now and show me what you've got! 🚀`;
       const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(shareUrl)}`;
       window.open(url, "_blank");
     } catch (e) {
@@ -441,14 +441,14 @@ export default function MemoryGame() {
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg text-lg"
               onClick={() => setShowShareModal(true)}
             >
-              Share to Farcaster
+              Share Score Card
             </button>
             <button
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg text-lg"
               onClick={handleShareScoreLink}
               disabled={shareLinkLoading}
             >
-              {shareLinkLoading ? "Sharing..." : "Share Score Link"}
+              {shareLinkLoading ? "Sharing..." : "Share to Farcaster"}
             </button>
           </div>
           {showShareModal && (
