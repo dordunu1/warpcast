@@ -264,16 +264,20 @@ export default function MemoryGame() {
         method: "POST",
         headers: {
           Authorization: `Client-ID ${imgurClientId}`,
-          // DO NOT set Content-Type! Let the browser set it for FormData.
         },
         body: formData,
       });
       const data = await res.json();
       if (!data.success) throw new Error("Imgur upload failed: " + (data.data?.error || ""));
       const imageUrl = data.data.link;
-      // Open Warpcast share intent
+      // Open Warpcast share intent with iOS compatibility
       const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(shareMessage)}&embeds[]=${encodeURIComponent(imageUrl)}`;
-      window.open(url, "_blank");
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        window.location.href = url;
+      } else {
+        window.open(url, "_blank");
+      }
       setShowShareModal(false);
       setShareMessage("");
     } catch (e) {
@@ -326,7 +330,12 @@ export default function MemoryGame() {
       const shareUrl = `${window.location.origin}/share?img=${encodeURIComponent(imageUrl)}&score=${encodeURIComponent(score)}`;
       const text = `🎮 Just scored ${score} in Games & Art! 🎯 Think you can beat my score? Challenge accepted! 🏆 Play now and show me what you've got! 🚀`;
       const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(shareUrl)}`;
-      window.open(url, "_blank");
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      if (isIOS) {
+        window.location.href = url;
+      } else {
+        window.open(url, "_blank");
+      }
     } catch (e) {
       alert("Failed to share score link: " + ((e as any)?.message || "Unknown error"));
     } finally {
