@@ -1,5 +1,7 @@
 import { Metadata } from "next";
 
+const MINIAPP_URL = process.env.NEXT_PUBLIC_MINIAPP_URL || "/";
+
 export async function generateMetadata({ searchParams }: { searchParams: { img?: string; score?: string } }): Promise<Metadata> {
   const img = searchParams.img || "/images/feed.jpg";
   const score = searchParams.score || "a great score";
@@ -22,11 +24,11 @@ export async function generateMetadata({ searchParams }: { searchParams: { img?:
 }
 
 export default function SharePage({ searchParams }: { searchParams: { img?: string; score?: string } }) {
-  // Redirect to the main app page instantly, but keep OG tags for social previews
+  // Redirect to the miniapp URL instantly, but keep OG tags for social previews
   return (
     <html>
       <head>
-        <meta httpEquiv="refresh" content="0; url=/" />
+        <meta httpEquiv="refresh" content={`0; url=${MINIAPP_URL}`} />
       </head>
       <body>
         <div className="flex flex-col items-center justify-center min-h-screen p-4 bg-white">
