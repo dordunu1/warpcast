@@ -1,3 +1,4 @@
+"use client";
 import React, { useState, useEffect } from "react";
 import { FaPaintBrush, FaRocket, FaCoins, FaThList, FaHome, FaMusic, FaCamera, FaGamepad, FaGem, FaEllipsisH, FaDiscord, FaTwitter } from "react-icons/fa";
 import DrawingCanvas from "./DrawingCanvas";
