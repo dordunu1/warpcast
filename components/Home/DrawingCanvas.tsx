@@ -71,7 +71,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, size: number) {
   ctx.restore();
 }
 
-export default function DrawingCanvas({ onExport }: { onExport?: (dataUrl: string) => void }) {
+export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUrl: string) => void, onBack?: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
   const [brushColor, setBrushColor] = useState("#e57373");
@@ -225,7 +225,7 @@ export default function DrawingCanvas({ onExport }: { onExport?: (dataUrl: strin
       const filteredTraits = traits.filter(t => t.type && t.value);
       const metadata = {
         name: artworkName,
-        description: "Drawn in the Farcaster Mini App",
+        description: "Drawn in the Fun & Fund Mini App",
         image: imageIpfsUri,
         attributes: filteredTraits.map(t => ({ trait_type: t.type, value: t.value })),
       };
@@ -282,242 +282,253 @@ export default function DrawingCanvas({ onExport }: { onExport?: (dataUrl: strin
     e.target.value = "";
   };
   return (
-    <div className="flex flex-col items-center w-full">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between w-full max-w-lg p-2 mb-2 rounded-2xl shadow bg-white/80 gap-2">
-        <label className="flex items-center gap-2 px-3 py-2 rounded-full shadow-sm bg-white border border-gray-100">
-          <span className="w-4 h-4 rounded-full" style={{ background: brushColor }} />
-          <span className="text-xs font-semibold text-gray-700">Select Color</span>
-          <input type="color" value={brushColor} onChange={e => setBrushColor(e.target.value)} className="w-6 h-6 border-none bg-transparent" />
-        </label>
-        <label className="flex items-center gap-2 px-3 py-2 rounded-full shadow-sm bg-white border border-gray-100">
-          <span className="w-4 h-4 rounded-full" style={{ background: bgColor }} />
-          <span className="text-xs font-semibold text-gray-700">Bg Color</span>
-          <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} className="w-6 h-6 border-none bg-transparent" />
-        </label>
+    <div className="flex flex-col items-center w-full relative">
+      {onBack && (
         <button
-          className={`flex items-center gap-2 px-3 py-2 rounded-full shadow-sm border font-semibold text-xs ${mode === "brush" ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-white text-gray-700 border-gray-100"}`}
-          onClick={() => setMode("brush")}
+          className="absolute top-0 left-0 z-10 flex items-center gap-1 px-3 py-1 bg-white/80 text-gray-700 rounded-full text-sm font-medium hover:bg-white transition -translate-y-1"
+          onClick={onBack}
+          style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
         >
-          <svg width={18} height={18} viewBox="0 0 24 24" fill="none"><rect x="10" y="2" width="4" height="14" rx="2" fill="#2563eb" /><ellipse cx="12" cy="18" rx="4" ry="2" fill="#2563eb" /></svg>
-          Brush
+          <span className="text-lg">←</span> Back
         </button>
-        <button
-          className={`flex items-center gap-2 px-3 py-2 rounded-full shadow-sm border font-semibold text-xs ${mode === "eraser" ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-white text-gray-700 border-gray-100"}`}
-          onClick={() => setMode("eraser")}
-        >
-          <svg width={18} height={18} viewBox="0 0 24 24" fill="none"><rect x="6" y="4" width="12" height="12" rx="3" fill="#f59e42" /></svg>
-          Eraser
-        </button>
-        <button
-          className="flex items-center gap-2 px-3 py-2 rounded-full shadow-sm bg-white border border-gray-100"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <svg width={20} height={20} fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#888" strokeWidth={2} fill="#f3f3f3" /><path d="M8 12h8M12 8v8" stroke="#888" strokeWidth={2} strokeLinecap="round" /></svg>
-          <span className="text-xs font-semibold text-gray-700">Add Image</span>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            className="hidden"
-            onChange={handleAddImage}
-          />
-        </button>
-        <div className="flex items-center gap-2 ml-auto">
-          <span className="text-pink-500 font-bold text-sm">Brush Size:</span>
-          <input type="range" min={2} max={24} value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="accent-pink-400" />
-          <span className="text-green-500 font-bold text-sm">{brushSize}px</span>
-        </div>
-      </div>
-      {/* Canvas with grid bg */}
-      <div className="rounded-2xl shadow border border-pink-100 bg-pink-50 overflow-hidden" style={{ width: CANVAS_WIDTH, height: CANVAS_HEIGHT }}>
-        <canvas
-          ref={canvasRef}
-          width={CANVAS_WIDTH}
-          height={CANVAS_HEIGHT}
-          style={{ background: bgColor, borderRadius: 18, width: CANVAS_WIDTH, height: CANVAS_HEIGHT, touchAction: "none" }}
-          onMouseDown={startDrawing}
-          onMouseUp={endDrawing}
-          onMouseOut={endDrawing}
-          onMouseMove={draw}
-          onTouchStart={startDrawing}
-          onTouchEnd={endDrawing}
-          onTouchCancel={endDrawing}
-          onTouchMove={draw}
-        />
-      </div>
-      {/* Undo and Mint buttons */}
-      <div className="flex w-full max-w-lg mt-3 gap-2">
-        <button
-          className="flex-1 py-2 rounded-full bg-pink-500 text-white font-bold shadow hover:bg-pink-600 transition"
-          onClick={handleUndo}
-        >
-          Undo
-        </button>
-        <button
-          className="flex-1 py-2 rounded-full bg-green-500 text-white font-bold shadow hover:bg-green-600 transition"
-          onClick={handleMint}
-        >
-          Mint
-        </button>
-      </div>
-      {/* Minting modal with traits */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-          <div className="bg-white rounded-2xl shadow-xl p-6 w-[380px] flex flex-col items-center relative" style={{background: 'linear-gradient(135deg, #fff0f6 0%, #fdf6fa 100%)'}}>
-            {/* X Close Button */}
-            <button
-              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-pink-100 border border-pink-200 text-pink-500 text-xl font-bold shadow-sm transition"
-              onClick={() => {
-                setShowModal(false);
-                setMintStep("idle");
-                setMintMsg("");
-                setArtworkName("");
-                setTraits([{ type: "", value: "" }]);
-              }}
-              aria-label="Close"
-            >
-              ×
-            </button>
-            <div className="text-2xl font-extrabold mb-1 bg-gradient-to-r from-pink-500 to-pink-400 bg-clip-text text-transparent">Mint Your 1/1 NFT</div>
-            <div className="text-sm text-gray-700 mb-4 text-center">You&apos;re about to mint your artwork as a unique 1/1 NFT. Each piece is one-of-a-kind and will be permanently stored on the blockchain.</div>
-            {mintStep === "traits" && (
-              <>
-                <div className="w-full bg-white/70 rounded-xl p-4 mb-4">
-                  <div className="font-semibold text-gray-800 mb-2">Artwork Details</div>
-                  <div className="flex flex-col gap-2">
-                    <label className="text-xs font-semibold text-gray-500">Name</label>
-                    <input
-                      className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-white text-gray-900 font-semibold"
-                      placeholder="My Artwork"
-                      value={artworkName}
-                      onChange={e => setArtworkName(e.target.value)}
-                      maxLength={32}
-                      required
-                    />
-                    <div className="flex gap-4 mt-2 text-xs text-gray-600">
-                      <div>Edition: <span className="font-bold">1 of 1</span></div>
-                      <div>Mint Price: <span className="font-bold">0.0001 MON</span></div>
-                    </div>
-                  </div>
-                </div>
-                <div className="w-full mb-2">
-                  <div className="font-semibold text-gray-800 mb-1">Add Custom Traits <span className="text-xs text-gray-400">(Optional)</span></div>
-                  <div className="text-xs text-gray-500 mb-2">Traits help describe your artwork and make it more discoverable.</div>
-                  <div className="flex flex-col gap-1">
-                    {traits.map((trait, idx) => (
-                      <div key={idx} className="flex gap-2 items-center w-full">
-                        <input
-                          className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-pink-100 bg-white text-gray-900 text-sm"
-                          placeholder="Trait Type"
-                          value={trait.type}
-                          onChange={e => handleTraitChange(idx, "type", e.target.value)}
-                          maxLength={16}
-                        />
-                        <input
-                          className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-pink-100 bg-white text-gray-900 text-sm"
-                          placeholder="Value"
-                          value={trait.value}
-                          onChange={e => handleTraitChange(idx, "value", e.target.value)}
-                          maxLength={24}
-                        />
-                        {traits.length > 1 && (
-                          <button
-                            className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-pink-50 hover:bg-pink-100 text-pink-500 text-base ml-1 border border-pink-100"
-                            onClick={() => handleRemoveTrait(idx)}
-                            title="Remove Trait"
-                            type="button"
-                            tabIndex={-1}
-                          >
-                            &#128465;
-                          </button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    className="text-pink-500 hover:text-pink-700 text-sm font-semibold mt-1"
-                    onClick={handleAddTrait}
-                    type="button"
-                  >
-                    + Add Trait
-                  </button>
-                </div>
-                {mintMsg && <div className="text-xs text-red-500 mb-2">{mintMsg}</div>}
-                <div className="flex w-full justify-between mt-4">
-                  <button
-                    className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold"
-                    onClick={() => {
-                      setShowModal(false);
-                      setMintStep("idle");
-                      setMintMsg("");
-                      setArtworkName("");
-                      setTraits([{ type: "", value: "" }]);
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    className="px-4 py-2 rounded-lg bg-pink-400 hover:bg-pink-500 text-white font-bold disabled:opacity-50"
-                    onClick={handleTraitsSubmit}
-                    disabled={!artworkName.trim()}
-                  >
-                    Mint as 1/1 NFT
-                  </button>
-                </div>
-              </>
-            )}
-            {mintStep === "ipfs" && (
-              <div className="w-full space-y-4">
-                <div className="animate-pulse flex items-center justify-center">
-                  <div className="w-8 h-8 border-4 border-pink-400 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-                <div className="text-sm text-center">Uploading to IPFS...</div>
-              </div>
-            )}
-            {mintStep === "mint" && (
-              <div className="w-full space-y-4">
-                <div className="animate-pulse flex items-center justify-center">
-                  <div className="w-8 h-8 border-4 border-pink-400 border-t-transparent rounded-full animate-spin"></div>
-                </div>
-                <div className="text-sm text-center">Minting your NFT... Waiting for confirmation.</div>
-              </div>
-            )}
-            {mintStep === "success" && ipfsHash && txHash && (
-              <div className="w-full flex flex-col items-center space-y-4">
-                <div className="text-2xl text-green-500">✓</div>
-                <div className="text-base text-green-600 font-semibold">Successfully Minted!</div>
-                <a
-                  href={`https://testnet.monadexplorer.com/tx/${txHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-center text-blue-700 underline hover:text-blue-900"
-                >
-                  View Transaction
-                </a>
-                <a
-                  href={`https://ipfs.io/ipfs/${ipfsHash}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block text-center text-blue-700 underline hover:text-blue-900"
-                >
-                  View IPFS
-                </a>
-              </div>
-            )}
-            {isError && mintStep === "mint" && (
-              <div className="w-full space-y-4">
-                <div className="flex items-center justify-center text-red-500">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-                <div className="text-sm text-center text-red-500">Mint failed. Please try again.</div>
-              </div>
-            )}
+      )}
+      <div className="pt-12 w-full flex flex-col items-center">
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center justify-between w-full max-w-lg p-2 mb-2 rounded-2xl shadow bg-white/80 gap-2">
+          <label className="flex items-center gap-2 px-3 py-2 rounded-full shadow-sm bg-white border border-gray-100">
+            <span className="w-4 h-4 rounded-full" style={{ background: brushColor }} />
+            <span className="text-xs font-semibold text-gray-700">Select Color</span>
+            <input type="color" value={brushColor} onChange={e => setBrushColor(e.target.value)} className="w-6 h-6 border-none bg-transparent" />
+          </label>
+          <label className="flex items-center gap-2 px-3 py-2 rounded-full shadow-sm bg-white border border-gray-100">
+            <span className="w-4 h-4 rounded-full" style={{ background: bgColor }} />
+            <span className="text-xs font-semibold text-gray-700">Bg Color</span>
+            <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} className="w-6 h-6 border-none bg-transparent" />
+          </label>
+          <button
+            className={`flex items-center gap-2 px-3 py-2 rounded-full shadow-sm border font-semibold text-xs ${mode === "brush" ? "bg-blue-100 text-blue-700 border-blue-200" : "bg-white text-gray-700 border-gray-100"}`}
+            onClick={() => setMode("brush")}
+          >
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none"><rect x="10" y="2" width="4" height="14" rx="2" fill="#2563eb" /><ellipse cx="12" cy="18" rx="4" ry="2" fill="#2563eb" /></svg>
+            Brush
+          </button>
+          <button
+            className={`flex items-center gap-2 px-3 py-2 rounded-full shadow-sm border font-semibold text-xs ${mode === "eraser" ? "bg-orange-100 text-orange-700 border-orange-200" : "bg-white text-gray-700 border-gray-100"}`}
+            onClick={() => setMode("eraser")}
+          >
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none"><rect x="6" y="4" width="12" height="12" rx="3" fill="#f59e42" /></svg>
+            Eraser
+          </button>
+          <button
+            className="flex items-center gap-2 px-3 py-2 rounded-full shadow-sm bg-white border border-gray-100"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <svg width={20} height={20} fill="none" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4" stroke="#888" strokeWidth={2} fill="#f3f3f3" /><path d="M8 12h8M12 8v8" stroke="#888" strokeWidth={2} strokeLinecap="round" /></svg>
+            <span className="text-xs font-semibold text-gray-700">Add Image</span>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAddImage}
+            />
+          </button>
+          <div className="flex items-center gap-2 ml-auto">
+            <span className="text-pink-500 font-bold text-sm">Brush Size:</span>
+            <input type="range" min={2} max={24} value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="accent-pink-400" />
+            <span className="text-green-500 font-bold text-sm">{brushSize}px</span>
           </div>
         </div>
-      )}
+        {/* Canvas with grid bg */}
+        <div className="mt-8">
+          <canvas
+            ref={canvasRef}
+            width={CANVAS_WIDTH}
+            height={CANVAS_HEIGHT}
+            style={{ background: bgColor, borderRadius: 18, width: CANVAS_WIDTH, height: CANVAS_HEIGHT, touchAction: "none" }}
+            onMouseDown={startDrawing}
+            onMouseUp={endDrawing}
+            onMouseOut={endDrawing}
+            onMouseMove={draw}
+            onTouchStart={startDrawing}
+            onTouchEnd={endDrawing}
+            onTouchCancel={endDrawing}
+            onTouchMove={draw}
+          />
+        </div>
+        {/* Undo and Mint buttons */}
+        <div className="flex w-full max-w-lg mt-3 gap-2">
+          <button
+            className="flex-1 py-2 rounded-full bg-pink-500 text-white font-bold shadow hover:bg-pink-600 transition"
+            onClick={handleUndo}
+          >
+            Undo
+          </button>
+          <button
+            className="flex-1 py-2 rounded-full bg-green-500 text-white font-bold shadow hover:bg-green-600 transition"
+            onClick={handleMint}
+          >
+            Mint
+          </button>
+        </div>
+        {/* Minting modal with traits */}
+        {showModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+            <div className="bg-white rounded-2xl shadow-xl p-6 w-[380px] flex flex-col items-center relative" style={{background: 'linear-gradient(135deg, #fff0f6 0%, #fdf6fa 100%)'}}>
+              {/* X Close Button */}
+              <button
+                className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-pink-100 border border-pink-200 text-pink-500 text-xl font-bold shadow-sm transition"
+                onClick={() => {
+                  setShowModal(false);
+                  setMintStep("idle");
+                  setMintMsg("");
+                  setArtworkName("");
+                  setTraits([{ type: "", value: "" }]);
+                }}
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <div className="text-2xl font-extrabold mb-1 bg-gradient-to-r from-pink-500 to-pink-400 bg-clip-text text-transparent">Mint Your 1/1 NFT</div>
+              <div className="text-sm text-gray-700 mb-4 text-center">You&apos;re about to mint your artwork as a unique 1/1 NFT. Each piece is one-of-a-kind and will be permanently stored on the blockchain.</div>
+              {mintStep === "traits" && (
+                <>
+                  <div className="w-full bg-white/70 rounded-xl p-4 mb-4">
+                    <div className="font-semibold text-gray-800 mb-2">Artwork Details</div>
+                    <div className="flex flex-col gap-2">
+                      <label className="text-xs font-semibold text-gray-500">Name</label>
+                      <input
+                        className="w-full px-3 py-2 rounded-lg border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-300 bg-white text-gray-900 font-semibold"
+                        placeholder="My Artwork"
+                        value={artworkName}
+                        onChange={e => setArtworkName(e.target.value)}
+                        maxLength={32}
+                        required
+                      />
+                      <div className="flex gap-4 mt-2 text-xs text-gray-600">
+                        <div>Edition: <span className="font-bold">1 of 1</span></div>
+                        <div>Mint Price: <span className="font-bold">0.0001 MON</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-full mb-2">
+                    <div className="font-semibold text-gray-800 mb-1">Add Custom Traits <span className="text-xs text-gray-400">(Optional)</span></div>
+                    <div className="text-xs text-gray-500 mb-2">Traits help describe your artwork and make it more discoverable.</div>
+                    <div className="flex flex-col gap-1">
+                      {traits.map((trait, idx) => (
+                        <div key={idx} className="flex gap-2 items-center w-full">
+                          <input
+                            className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-pink-100 bg-white text-gray-900 text-sm"
+                            placeholder="Trait Type"
+                            value={trait.type}
+                            onChange={e => handleTraitChange(idx, "type", e.target.value)}
+                            maxLength={16}
+                          />
+                          <input
+                            className="flex-1 min-w-0 px-2 py-1 rounded-lg border border-pink-100 bg-white text-gray-900 text-sm"
+                            placeholder="Value"
+                            value={trait.value}
+                            onChange={e => handleTraitChange(idx, "value", e.target.value)}
+                            maxLength={24}
+                          />
+                          {traits.length > 1 && (
+                            <button
+                              className="flex-shrink-0 w-7 h-7 flex items-center justify-center rounded-full bg-pink-50 hover:bg-pink-100 text-pink-500 text-base ml-1 border border-pink-100"
+                              onClick={() => handleRemoveTrait(idx)}
+                              title="Remove Trait"
+                              type="button"
+                              tabIndex={-1}
+                            >
+                              &#128465;
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      className="text-pink-500 hover:text-pink-700 text-sm font-semibold mt-1"
+                      onClick={handleAddTrait}
+                      type="button"
+                    >
+                      + Add Trait
+                    </button>
+                  </div>
+                  {mintMsg && <div className="text-xs text-red-500 mb-2">{mintMsg}</div>}
+                  <div className="flex w-full justify-between mt-4">
+                    <button
+                      className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold"
+                      onClick={() => {
+                        setShowModal(false);
+                        setMintStep("idle");
+                        setMintMsg("");
+                        setArtworkName("");
+                        setTraits([{ type: "", value: "" }]);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      className="px-4 py-2 rounded-lg bg-pink-400 hover:bg-pink-500 text-white font-bold disabled:opacity-50"
+                      onClick={handleTraitsSubmit}
+                      disabled={!artworkName.trim()}
+                    >
+                      Mint as 1/1 NFT
+                    </button>
+                  </div>
+                </>
+              )}
+              {mintStep === "ipfs" && (
+                <div className="w-full space-y-4">
+                  <div className="animate-pulse flex items-center justify-center">
+                    <div className="w-8 h-8 border-4 border-pink-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <div className="text-sm text-center">Uploading to IPFS...</div>
+                </div>
+              )}
+              {mintStep === "mint" && (
+                <div className="w-full space-y-4">
+                  <div className="animate-pulse flex items-center justify-center">
+                    <div className="w-8 h-8 border-4 border-pink-400 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                  <div className="text-sm text-center">Minting your NFT... Waiting for confirmation.</div>
+                </div>
+              )}
+              {mintStep === "success" && ipfsHash && txHash && (
+                <div className="w-full flex flex-col items-center space-y-4">
+                  <div className="text-2xl text-green-500">✓</div>
+                  <div className="text-base text-green-600 font-semibold">Successfully Minted!</div>
+                  <a
+                    href={`https://testnet.monadexplorer.com/tx/${txHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-center text-blue-700 underline hover:text-blue-900"
+                  >
+                    View Transaction
+                  </a>
+                  <a
+                    href={`https://ipfs.io/ipfs/${ipfsHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="block text-center text-blue-700 underline hover:text-blue-900"
+                  >
+                    View IPFS
+                  </a>
+                </div>
+              )}
+              {isError && mintStep === "mint" && (
+                <div className="w-full space-y-4">
+                  <div className="flex items-center justify-center text-red-500">
+                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </div>
+                  <div className="text-sm text-center text-red-500">Mint failed. Please try again.</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 } 

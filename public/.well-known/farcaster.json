@@ -1,26 +1,26 @@
 {
-  "subtitle": "A fun games and art mini app on Monad",
-  "description": "Play memory games and create art, then mint as NFTs on Monad testnet.",
-  "ogTitle": "Games and Art Mini App",
-  "ogDescription": "A two-in-one experience: memory games and art creation, with NFT minting.",
+  "subtitle": "Games, Art, and Giving on Monad",
+  "description": "Play memory games, create art, and support causes with donations. All in one joyful mini app on Monad.",
+  "ogTitle": "Fun & Fund",
+  "ogDescription": "A joyful experience: play games, create art, and make a difference with donations.",
   "ogImageUrl": "https://chrismini.netlify.app/images/feed.jpg",
-  "tagline": "Games + Art = Fun",
+  "tagline": "Play. Create. Give.",
   "heroImageUrl": "https://chrismini.netlify.app/images/feed.jpg",
   "accountAssociation": {
     "header": "eyJmaWQiOjI2NTAwOCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGUwOGRkODY5MzU1ZDUyMjE0NDg5M2RiNkFkQ2Y2ZDU3NzdFZTQ2OTgifQ",
-    "payload": "eyJkb21haW4iOiJjaHJpc21pbmkubmV0bGlmeS5hcHAifQ",
-    "signature": "MHg1YTdkZDhmMjQyZWExNDA2OGY2ZjJkM2M0NGJjOTA5ZTgxODcxZGE4YzNhMWVjZGVkZGI5OGZiMTMxMTAyMTY2Nzg1ZjhhYmRlZGJjOGEzOTRiN2FhMTNiMWU1MDllMjBlZDExNmRiNjkzYmQ2OTQ4MTg1MDM4NGMzYzBhY2ViODFj"
+    "payload": "eyJkb21haW4iOiJ0cmFkaXRpb25hbC1sZWdlbmRzLWh1bmdhcnktbGV4bWFyay50cnljbG91ZGZsYXJlLmNvbSJ9",
+    "signature": "MHgzZTY4ZTJkNmJkZDJiMTg5ZWRkYmM3ZGI3NzZlNzNmYzFiZTE1NDcwOGZlMjFlMzJmMmQxNDJhM2Q2ZGZiMjdmNjQ3NzRjZGRkNDZhNDY4YzljMTc5MTE5MTkyZDZkZjI1NTM5NzVlZDY1MTYxNmQyOGU0YTY5YjEwNTdjZmEwYjFj"
   },
   "frame": {
     "version": "1",
-    "name": "Games and Art",
+    "name": "Fun & Fund",
     "iconUrl": "https://chrismini.netlify.app/images/icon.jpeg",
     "homeUrl": "https://chrismini.netlify.app",
     "imageUrl": "https://chrismini.netlify.app/images/feed.jpg",
     "screenshotUrls": [],
     "tags": ["monad", "farcaster", "miniapp", "games", "art"],
     "primaryCategory": "games",
-    "buttonTitle": "Games and Art",
+    "buttonTitle": "Fun & Fund",
     "splashImageUrl": "https://chrismini.netlify.app/images/splash.jpeg",
     "splashBackgroundColor": "#ffffff",
     "webhookUrl": "https://chrismini.netlify.app/api/webhook"

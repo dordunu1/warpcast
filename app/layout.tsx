@@ -7,8 +7,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Games and Art",
-  description: "two in one mini app on monad testnet",
+  title: "Fun & Fund",
+  description: "Play memory games, create art, and support causes with donations. All in one joyful mini app on Monad.",
 };
 
 export default function RootLayout({

@@ -7,10 +7,10 @@ export async function generateMetadata({ searchParams }: { searchParams: { img?:
   const img = searchParams.img || "/images/feed.jpg";
   const score = searchParams.score || "a great score";
   return {
-    title: `I scored ${score} in Games & Art!`,
+    title: `I scored ${score} in Fun & Fund!`,
     description: "Can you beat my score? Play now!",
     openGraph: {
-      title: `I scored ${score} in Games & Art!`,
+      title: `I scored ${score} in Fun & Fund!`,
       description: "Can you beat my score? Play now!",
       images: [
         {

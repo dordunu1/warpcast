@@ -33,7 +33,7 @@ function getInitialCards() {
   return shuffle(cards);
 }
 
-export default function MemoryGame() {
+export default function MemoryGame({ onBack }: { onBack?: () => void }) {
   const [cards, setCards] = useState(getInitialCards());
   const [flipped, setFlipped] = useState<number[]>([]);
   const [matched, setMatched] = useState<number[]>([]);
@@ -191,7 +191,7 @@ export default function MemoryGame() {
       ];
       const metadata = {
         name: `Memory Game Score: ${score}`,
-        description: "Memory Game NFT minted from Farcaster Mini App",
+        description: "Memory Game NFT minted from Fun & Fund Mini App",
         image: imageIpfsUri,
         attributes: traitsArr.map((trait) => ({
           trait_type: trait.split(":")[0],
@@ -274,7 +274,7 @@ export default function MemoryGame() {
       // Use Farcaster SDK's composeCast action instead of window.open
       if (actions) {
         await actions.composeCast({
-          text: shareMessage || `🎮 Just scored ${score} in Games & Art! 🎯 Think you can beat my score? Challenge accepted! 🏆 Play now and show me what you've got! 🚀`,
+          text: shareMessage || `🎮 Just scored ${score} in Fun & Fund! 🎯 Think you can beat my score? Challenge accepted! 🏆 Play now and show me what you've got! 🚀`,
           embeds: [imageUrl],
         });
       } else {
@@ -332,7 +332,7 @@ export default function MemoryGame() {
       const imageUrl = data.data.link;
       // Build the share link to the /share page
       const shareUrl = `${window.location.origin}/share?img=${encodeURIComponent(imageUrl)}&score=${encodeURIComponent(score)}`;
-      const text = `🎮 Just scored ${score} in Games & Art! 🎯 Think you can beat my score? Challenge accepted! 🏆 Play now and show me what you've got! 🚀`;
+      const text = `🎮 Just scored ${score} in Fun & Fund! 🎯 Think you can beat my score? Challenge accepted! 🏆 Play now and show me what you've got! 🚀`;
       
       // Use Farcaster SDK's composeCast action instead of window.open
       if (actions) {
@@ -353,9 +353,18 @@ export default function MemoryGame() {
   };
 
   return (
-    <div id="memory-game-root" className="flex flex-col items-center justify-center w-full max-w-md mx-auto p-4 bg-black rounded-lg shadow-lg">
-      <div className="text-xl font-extrabold text-pink-400 mb-4 text-center">
-        Are you too smart to beat time? Challenge yourself!
+    <div id="memory-game-root" className="fixed inset-0 z-50 min-h-screen w-full !bg-black flex flex-col items-center justify-center overflow-auto">
+      {onBack && (
+        <button
+          className="absolute top-0 left-0 z-50 flex items-center gap-1 px-3 py-1 bg-white/80 text-gray-700 rounded-full text-sm font-medium hover:bg-white transition -translate-y-1"
+          onClick={onBack}
+          style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+        >
+          <span className="text-lg">←</span> Back
+        </button>
+      )}
+      <div className="text-xl font-extrabold text-pink-400 mb-4 text-center pt-16">
+        Are you too smart to beat time?!
       </div>
       {!isEthProviderAvailable && (
         <div className="text-red-400 font-bold mb-4 text-center">
@@ -431,7 +440,7 @@ export default function MemoryGame() {
       </div>
       {message && <div className="text-yellow-300 font-semibold mb-2 text-center">{message}</div>}
       <button
-        className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-lg text-lg transition"
+        className="bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-8 rounded-lg text-lg transition mx-auto block"
         onClick={handleRestart}
       >
         Restart
@@ -439,10 +448,10 @@ export default function MemoryGame() {
       {(!isActive && matched.length === cards.length) && (
         <div className="w-full flex flex-col items-center mb-4">
           <div className="text-lg font-bold text-yellow-300 mb-2">Beat your current score!</div>
-          <div className="grid grid-cols-2 gap-3 w-full mb-2">
+          <div className="grid grid-cols-2 gap-3 w-full mb-2 px-2 md:px-4 pt-2 pb-4">
             {isConnected && chainId === monadTestnet.id && (
               <button
-                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg text-lg disabled:opacity-50"
+                className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg text-base min-w-[120px] transition"
                 onClick={handleMint}
                 disabled={mintStatus === "loading"}
               >
@@ -450,19 +459,19 @@ export default function MemoryGame() {
               </button>
             )}
             <button
-              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg text-lg"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-base min-w-[120px] transition"
               onClick={handleRestart}
             >
               Play Again
             </button>
             <button
-              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-6 rounded-lg text-lg"
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-base min-w-[120px] transition"
               onClick={() => setShowShareModal(true)}
             >
               Share Score Card
             </button>
             <button
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg text-lg"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-base min-w-[120px] transition"
               onClick={handleShareScoreLink}
               disabled={shareLinkLoading}
             >

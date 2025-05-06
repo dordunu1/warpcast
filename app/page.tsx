@@ -19,27 +19,27 @@ const frame = {
 
 export async function generateMetadata(): Promise<Metadata> {
   return {
-    title: "Games and Art",
-    description: "Play memory games and create art, then mint as NFTs on Monad testnet.",
+    title: "Fun & Fund",
+    description: "Play memory games, create art, and support causes with donations. All in one joyful mini app on Monad.",
     openGraph: {
-      title: "Games and Art Mini App",
-      description: "A two-in-one experience: memory games and art creation, with NFT minting.",
+      title: "Fun & Fund Mini App",
+      description: "A joyful experience: play games, create art, and make a difference with donations.",
       images: [
         {
           url: `${APP_URL}/images/feed.jpg`,
           width: 1200,
           height: 630,
-          alt: "Games and Art Mini App",
+          alt: "Fun & Fund Mini App",
         },
       ],
     },
     other: {
       "fc:frame": JSON.stringify(frame),
-      subtitle: "A fun games and art mini app on Monad",
+      subtitle: "Games, Art, and Giving on Monad",
       tagline: "Games + Art = Fun",
       heroImageUrl: `${APP_URL}/images/feed.jpg`,
-      ogTitle: "Games and Art Mini App",
-      ogDescription: "A two-in-one experience: memory games and art creation, with NFT minting.",
+      ogTitle: "Fun & Fund",
+      ogDescription: "A joyful experience: play games, create art, and make a difference with donations.",
       ogImageUrl: `${APP_URL}/images/feed.jpg`,
     },
   };
