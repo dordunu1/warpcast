@@ -8,8 +8,8 @@
   "heroImageUrl": "https://chrismini.netlify.app/images/feed.jpg",
   "accountAssociation": {
     "header": "eyJmaWQiOjI2NTAwOCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGUwOGRkODY5MzU1ZDUyMjE0NDg5M2RiNkFkQ2Y2ZDU3NzdFZTQ2OTgifQ",
-    "payload": "eyJkb21haW4iOiJ0cmFkaXRpb25hbC1sZWdlbmRzLWh1bmdhcnktbGV4bWFyay50cnljbG91ZGZsYXJlLmNvbSJ9",
-    "signature": "MHgzZTY4ZTJkNmJkZDJiMTg5ZWRkYmM3ZGI3NzZlNzNmYzFiZTE1NDcwOGZlMjFlMzJmMmQxNDJhM2Q2ZGZiMjdmNjQ3NzRjZGRkNDZhNDY4YzljMTc5MTE5MTkyZDZkZjI1NTM5NzVlZDY1MTYxNmQyOGU0YTY5YjEwNTdjZmEwYjFj"
+    "payload": "eyJkb21haW4iOiJjaHJpc21pbmkubmV0bGlmeS5hcHAifQ",
+    "signature": "MHg1YTdkZDhmMjQyZWExNDA2OGY2ZjJkM2M0NGJjOTA5ZTgxODcxZGE4YzNhMWVjZGVkZGI5OGZiMTMxMTAyMTY2Nzg1ZjhhYmRlZGJjOGEzOTRiN2FhMTNiMWU1MDllMjBlZDExNmRiNjkzYmQ2OTQ4MTg1MDM4NGMzYzBhY2ViODFj"
   },
   "frame": {
     "version": "1",

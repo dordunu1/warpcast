@@ -12,8 +12,8 @@ export async function GET() {
     heroImageUrl: `${APP_URL}/images/feed.jpg`,
     accountAssociation: {
       header: "eyJmaWQiOjI2NTAwOCwidHlwZSI6ImN1c3RvZHkiLCJrZXkiOiIweGUwOGRkODY5MzU1ZDUyMjE0NDg5M2RiNkFkQ2Y2ZDU3NzdFZTQ2OTgifQ",
-      payload: "eyJkb21haW4iOiJ0cmFkaXRpb25hbC1sZWdlbmRzLWh1bmdhcnktbGV4bWFyay50cnljbG91ZGZsYXJlLmNvbSJ9",
-      signature: "MHgzZTY4ZTJkNmJkZDJiMTg5ZWRkYmM3ZGI3NzZlNzNmYzFiZTE1NDcwOGZlMjFlMzJmMmQxNDJhM2Q2ZGZiMjdmNjQ3NzRjZGRkNDZhNDY4YzljMTc5MTE5MTkyZDZkZjI1NTM5NzVlZDY1MTYxNmQyOGU0YTY5YjEwNTdjZmEwYjFj"
+      payload: "eyJkb21haW4iOiJkZWNhZGVzLWFuYWx5c2lzLW9yZGVyaW5nLWFsbG93YW5jZS50cnljbG91ZGZsYXJlLmNvbSJ9",
+      signature: "MHgwY2YyYWJkMDAxMWVhYWFlMGVhYTJiZGM5NGM3NjE4ZmVkMjA5ZTY4NDFmODY2MTg1N2JkY2FlNzQxYTRhNTM5NGY5ODYxMWJlMWM3MTA4YTI2ZGUxY2EwMWFjY2RmOWZkYTA4NTAwOTk3NWViOWU1MDJmN2Y0NDgzMDI0YzRmYjFi"
     },
     frame: {
       version: "1",
