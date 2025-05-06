@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 const MINIAPP_URL = process.env.NEXT_PUBLIC_MINIAPP_URL || "/";
 
 export async function generateMetadata({ searchParams }: { searchParams: { img?: string; score?: string } }): Promise<Metadata> {
-  const img = searchParams.img || "/images/feed.jpg";
+  const img = searchParams.img || "/images/feed.png";
   const score = searchParams.score || "a great score";
   return {
     title: `I scored ${score} in Fun & Fund!`,

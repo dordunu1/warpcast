@@ -8,8 +8,7 @@ import { useMiniAppContext } from "@/hooks/use-miniapp-context";
 const NFT_CONTRACT_ADDRESS = "0x1b948Fd7BF177446Ac258227f008E10231A365Af";
 const NFT_ABI = [{"inputs":[],"stateMutability":"nonpayable","type":"constructor"},{"inputs":[{"internalType":"address","name":"sender","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721IncorrectOwner","type":"error"},{"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721InsufficientApproval","type":"error"},{"inputs":[{"internalType":"address","name":"approver","type":"address"}],"name":"ERC721InvalidApprover","type":"error"},{"inputs":[{"internalType":"address","name":"operator","type":"address"}],"name":"ERC721InvalidOperator","type":"error"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"ERC721InvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"receiver","type":"address"}],"name":"ERC721InvalidReceiver","type":"error"},{"inputs":[{"internalType":"address","name":"sender","type":"address"}],"name":"ERC721InvalidSender","type":"error"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ERC721NonexistentToken","type":"error"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"OwnableInvalidOwner","type":"error"},{"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"OwnableUnauthorizedAccount","type":"error"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"approved","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Approval","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"owner","type":"address"},{"indexed":true,"internalType":"address","name":"operator","type":"address"},{"indexed":false,"internalType":"bool","name":"approved","type":"bool"}],"name":"ApprovalForAll","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_fromTokenId","type":"uint256"},{"indexed":false,"internalType":"uint256","name":"_toTokenId","type":"uint256"}],"name":"BatchMetadataUpdate","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"_tokenId","type":"uint256"}],"name":"MetadataUpdate","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"},{"indexed":false,"internalType":"string","name":"uri","type":"string"}],"name":"NFTMinted","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"from","type":"address"},{"indexed":true,"internalType":"address","name":"to","type":"address"},{"indexed":true,"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"Transfer","type":"event"},{"inputs":[],"name":"MINT_PRICE","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"}],"name":"balanceOf","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getApproved","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"getMintPrice","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"pure","type":"function"},{"inputs":[],"name":"getTotalSupply","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"getTraits","outputs":[{"internalType":"string[]","name":"","type":"string[]"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"owner","type":"address"},{"internalType":"address","name":"operator","type":"address"}],"name":"isApprovedForAll","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"uri","type":"string"},{"internalType":"string[]","name":"traits","type":"string[]"}],"name":"mint","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"payable","type":"function"},{"inputs":[],"name":"name","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"ownerOf","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"bytes","name":"data","type":"bytes"}],"name":"safeTransferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"operator","type":"address"},{"internalType":"bool","name":"approved","type":"bool"}],"name":"setApprovalForAll","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"bytes4","name":"interfaceId","type":"bytes4"}],"name":"supportsInterface","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"symbol","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"tokenURI","outputs":[{"internalType":"string","name":"","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"address","name":"from","type":"address"},{"internalType":"address","name":"to","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"transferFrom","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"withdraw","outputs":[],"stateMutability":"nonpayable","type":"function"}];
 
-const CANVAS_WIDTH = 340;
-const CANVAS_HEIGHT = 340;
+const CANVAS_SIZE = 400;
 
 const ToolIcon = ({ type, active, ...props }: { type: string; active?: boolean; [key: string]: any }) => {
   switch (type) {
@@ -39,11 +38,11 @@ const ToolIcon = ({ type, active, ...props }: { type: string; active?: boolean; 
 };
 
 function useResponsiveCanvasSize() {
-  // For mobile, shrink canvas to fit screen
-  const [size, setSize] = useState(CANVAS_WIDTH);
+  // For mobile, shrink canvas to fit screen, but allow up to 400px
+  const [size, setSize] = useState(CANVAS_SIZE);
   React.useEffect(() => {
     const update = () => {
-      setSize(Math.min(window.innerWidth - 32, CANVAS_WIDTH));
+      setSize(Math.min(window.innerWidth - 32, CANVAS_SIZE));
     };
     update();
     window.addEventListener("resize", update);
@@ -71,7 +70,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, size: number) {
   ctx.restore();
 }
 
-export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUrl: string) => void, onBack?: () => void }) {
+export default function DrawingCanvas({ onExport }: { onExport?: (dataUrl: string) => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
   const [brushColor, setBrushColor] = useState("#e57373");
@@ -119,10 +118,10 @@ export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUr
   React.useEffect(() => {
     const ctx = canvasRef.current?.getContext("2d");
     if (ctx) {
-      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
       ctx.fillStyle = bgColor;
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-      drawGrid(ctx, CANVAS_WIDTH);
+      ctx.fillRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+      drawGrid(ctx, CANVAS_SIZE);
     }
   }, [bgColor]);
 
@@ -161,9 +160,9 @@ export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUr
     const ctx = canvasRef.current.getContext("2d");
     const img = new window.Image();
     img.onload = () => {
-      ctx?.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      ctx?.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
       ctx?.drawImage(img, 0, 0);
-      drawGrid(ctx!, CANVAS_WIDTH);
+      drawGrid(ctx!, CANVAS_SIZE);
     };
     img.src = history[history.length - 1];
     setHistory((h) => h.slice(0, -1));
@@ -270,11 +269,11 @@ export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUr
     const img = new window.Image();
     img.onload = () => {
       // Scale image to fit canvas
-      const scale = Math.min(CANVAS_WIDTH / img.width, CANVAS_HEIGHT / img.height, 1);
+      const scale = Math.min(CANVAS_SIZE / img.width, CANVAS_SIZE / img.height, 1);
       const w = img.width * scale;
       const h = img.height * scale;
-      const x = (CANVAS_WIDTH - w) / 2;
-      const y = (CANVAS_HEIGHT - h) / 2;
+      const x = (CANVAS_SIZE - w) / 2;
+      const y = (CANVAS_SIZE - h) / 2;
       ctx?.drawImage(img, x, y, w, h);
     };
     img.src = URL.createObjectURL(file);
@@ -283,15 +282,6 @@ export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUr
   };
   return (
     <div className="flex flex-col items-center w-full relative">
-      {onBack && (
-        <button
-          className="absolute top-0 left-0 z-10 flex items-center gap-1 px-3 py-1 bg-white/80 text-gray-700 rounded-full text-sm font-medium hover:bg-white transition -translate-y-1"
-          onClick={onBack}
-          style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
-        >
-          <span className="text-lg">←</span> Back
-        </button>
-      )}
       <div className="pt-12 w-full flex flex-col items-center">
         {/* Toolbar */}
         <div className="flex flex-wrap items-center justify-between w-full max-w-lg p-2 mb-2 rounded-2xl shadow bg-white/80 gap-2">
@@ -340,12 +330,12 @@ export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUr
           </div>
         </div>
         {/* Canvas with grid bg */}
-        <div className="mt-8">
+        <div className="mt-8 w-full flex justify-center">
           <canvas
             ref={canvasRef}
-            width={CANVAS_WIDTH}
-            height={CANVAS_HEIGHT}
-            style={{ background: bgColor, borderRadius: 18, width: CANVAS_WIDTH, height: CANVAS_HEIGHT, touchAction: "none" }}
+            width={size}
+            height={size}
+            style={{ background: bgColor, borderRadius: 18, width: size, height: size, touchAction: "none", maxWidth: "100%", maxHeight: "100%" }}
             onMouseDown={startDrawing}
             onMouseUp={endDrawing}
             onMouseOut={endDrawing}
@@ -356,17 +346,19 @@ export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUr
             onTouchMove={draw}
           />
         </div>
-        {/* Undo and Mint buttons */}
-        <div className="flex w-full max-w-lg mt-3 gap-2">
+        {/* Move Undo and Mint buttons outside the canvas container */}
+        <div className="flex w-full max-w-xs mt-6 gap-4 justify-center">
           <button
-            className="flex-1 py-2 rounded-full bg-pink-500 text-white font-bold shadow hover:bg-pink-600 transition"
+            className="flex-1 py-3 rounded-full bg-pink-500 text-white font-bold shadow-md hover:bg-pink-600 transition text-lg"
             onClick={handleUndo}
+            style={{ minWidth: 0 }}
           >
             Undo
           </button>
           <button
-            className="flex-1 py-2 rounded-full bg-green-500 text-white font-bold shadow hover:bg-green-600 transition"
+            className="flex-1 py-3 rounded-full bg-green-500 text-white font-bold shadow-md hover:bg-green-600 transition text-lg"
             onClick={handleMint}
+            style={{ minWidth: 0 }}
           >
             Mint
           </button>
@@ -374,7 +366,7 @@ export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUr
         {/* Minting modal with traits */}
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-            <div className="bg-white rounded-2xl shadow-xl p-6 w-[380px] flex flex-col items-center relative" style={{background: 'linear-gradient(135deg, #fff0f6 0%, #fdf6fa 100%)'}}>
+            <div className="bg-white rounded-2xl shadow-xl p-4 sm:p-6 w-full max-w-xs sm:max-w-md flex flex-col items-center relative" style={{background: 'linear-gradient(135deg, #fff0f6 0%, #fdf6fa 100%)'}}>
               {/* X Close Button */}
               <button
                 className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-pink-100 border border-pink-200 text-pink-500 text-xl font-bold shadow-sm transition"
@@ -454,9 +446,9 @@ export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUr
                     </button>
                   </div>
                   {mintMsg && <div className="text-xs text-red-500 mb-2">{mintMsg}</div>}
-                  <div className="flex w-full justify-between mt-4">
+                  <div className="flex w-full gap-2 mt-4 justify-between">
                     <button
-                      className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold"
+                      className="flex-1 py-2 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base"
                       onClick={() => {
                         setShowModal(false);
                         setMintStep("idle");
@@ -468,9 +460,10 @@ export default function DrawingCanvas({ onExport, onBack }: { onExport?: (dataUr
                       Cancel
                     </button>
                     <button
-                      className="px-4 py-2 rounded-lg bg-pink-400 hover:bg-pink-500 text-white font-bold disabled:opacity-50"
+                      className="flex-1 py-2 rounded-full bg-pink-400 hover:bg-pink-500 text-white font-bold text-base disabled:opacity-50"
                       onClick={handleTraitsSubmit}
                       disabled={!artworkName.trim()}
+                      style={{ whiteSpace: 'normal', lineHeight: 1.2 }}
                     >
                       Mint as 1/1 NFT
                     </button>

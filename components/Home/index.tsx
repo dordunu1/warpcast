@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import MemoryGame from "./MemoryGame";
 import DrawingCanvas from "./DrawingCanvas";
 import DonationApp from "./DonationApp";
+import ArtisticScenesLanding from "./ArtisticScenesLanding";
 
 const apps = [
   {
@@ -56,7 +57,7 @@ export default function Home() {
         <div className="w-full min-h-screen flex flex-col items-center justify-start">
           <div className="w-full flex flex-col items-center pt-12 md:pt-16">
             {selectedApp === "memory" && <MemoryGame onBack={() => setSelectedApp(null)} />}
-            {selectedApp === "art" && <DrawingCanvas onBack={() => setSelectedApp(null)} />}
+            {selectedApp === "art" && <ArtisticScenesLanding onBack={() => setSelectedApp(null)} />}
             {selectedApp === "donation" && <DonationApp onBack={() => setSelectedApp(null)} />}
           </div>
         </div>

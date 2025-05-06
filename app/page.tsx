@@ -4,12 +4,12 @@ import { APP_URL } from "@/lib/constants";
 
 const frame = {
   version: "next",
-  imageUrl: `${APP_URL}/images/feed.jpg`,
+  imageUrl: `${APP_URL}/images/feed.png`,
   button: {
-    title: "Games and Art",
+    title: "Fun & Fund",
     action: {
       type: "launch_frame",
-      name: "Games and Art",
+      name: "Fun & Fund",
       url: APP_URL,
       splashImageUrl: `${APP_URL}/images/splash.jpeg`,
       splashBackgroundColor: "#f7f7f7",
@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: "A joyful experience: play games, create art, and make a difference with donations.",
       images: [
         {
-          url: `${APP_URL}/images/feed.jpg`,
+          url: `${APP_URL}/images/feed.png`,
           width: 1200,
           height: 630,
           alt: "Fun & Fund Mini App",
@@ -37,10 +37,10 @@ export async function generateMetadata(): Promise<Metadata> {
       "fc:frame": JSON.stringify(frame),
       subtitle: "Games, Art, and Giving on Monad",
       tagline: "Games + Art = Fun",
-      heroImageUrl: `${APP_URL}/images/feed.jpg`,
+      heroImageUrl: `${APP_URL}/images/feed.png`,
       ogTitle: "Fun & Fund",
       ogDescription: "A joyful experience: play games, create art, and make a difference with donations.",
-      ogImageUrl: `${APP_URL}/images/feed.jpg`,
+      ogImageUrl: `${APP_URL}/images/feed.png`,
     },
   };
 }
