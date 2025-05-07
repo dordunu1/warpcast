@@ -7,6 +7,7 @@ import { useAccount, useContractRead, useContractWrite, useConnect, useSwitchCha
 import { parseEther, formatEther, parseGwei, parseAbiItem, getEventSelector, decodeEventLog } from 'viem';
 import { monadTestnet } from 'viem/chains';
 import axios from 'axios';
+import { useContractWrite as useWagmiContractWrite } from 'wagmi';
 
 interface Trait {
   type: string;
@@ -191,6 +192,8 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
   const isOnMonad = chainId === monadTestnet.id;
   // Contract write for collection creation
   const { writeContractAsync: createCollectionContract } = useContractWrite();
+  // Add contract write for setWhitelist
+  const { writeContractAsync: setWhitelistOnContract } = useWagmiContractWrite();
   // Use hardcoded creation fee
   const creationFee = CREATION_FEE_MON;
   const publicClient = usePublicClient();
@@ -536,7 +539,48 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
         }
       } catch (e) { /* fallback: leave blank if not found */ }
       setCurrentStep(3);
-      // Step 4: Save to Firebase (store ipfs://... for minting, convert to HTTP only for UI display)
+      // Step 4: Set whitelist on contract if enabled
+      if (whitelist && nftContractAddress) {
+        // Parse addresses from textarea and CSV
+        let addresses: string[] = [];
+        if (whitelistAddresses) {
+          addresses = whitelistAddresses.split(/\s|,|\n/).map(a => a.trim()).filter(Boolean);
+        }
+        // If CSV file, parse and add
+        if (whitelistFile) {
+          const text = await whitelistFile.text();
+          addresses = addresses.concat(text.split(/\s|,|\n/).map(a => a.trim()).filter(Boolean));
+        }
+        // Remove duplicates
+        addresses = Array.from(new Set(addresses));
+        if (addresses.length > 0) {
+          setCurrentStep(3); // Show progress
+          // Only keep valid Ethereum addresses
+          addresses = addresses.filter(a => /^0x[a-fA-F0-9]{40}$/.test(a));
+          const limits = addresses.map(() => maxPerWallet ? BigInt(maxPerWallet) : BigInt(1));
+          const addressesTyped = addresses.map(a => a as `0x${string}`);
+          await setWhitelistOnContract({
+            address: nftContractAddress as `0x${string}`,
+            abi: [
+              {
+                "inputs": [
+                  { "internalType": "address[]", "name": "addresses", "type": "address[]" },
+                  { "internalType": "uint256[]", "name": "limits", "type": "uint256[]" }
+                ],
+                "name": "setWhitelist",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+              }
+            ],
+            functionName: 'setWhitelist',
+            args: [addressesTyped, limits],
+            gas: BigInt(500_000),
+            // No value needed
+          });
+        }
+      }
+      // Step 5: Save to Firebase (store ipfs://... for minting, convert to HTTP only for UI display)
       const collectionData: Omit<NFTCollection, 'id' | 'createdAt'> & {
         contractAddress?: string;
         mintStartDate?: number;
@@ -544,6 +588,7 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
         totalSupply?: string;
         discord: string;
         twitter: string;
+        whitelistEnabled?: boolean;
       } = {
         name,
         description,
@@ -566,6 +611,7 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
         discord,
         twitter,
         maxPerWallet,
+        whitelistEnabled: whitelist,
       };
       const collectionId = await createNFTCollection(collectionData);
       onCreate({

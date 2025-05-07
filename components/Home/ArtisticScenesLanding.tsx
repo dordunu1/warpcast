@@ -11,6 +11,7 @@ import { parseEther, parseGwei } from "viem";
 import { monadTestnet } from "viem/chains";
 import { useMiniAppContext } from "@/hooks/use-miniapp-context";
 import { ipfsToHttp } from '../../lib/pinata';
+import { useContractRead as useWagmiContractRead } from 'wagmi';
 
 const NAV_ITEMS = [
   { key: "home", label: "Home", icon: <FaHome /> },
@@ -79,6 +80,52 @@ const NFT_READ_ABI = [
   }
 ];
 
+// Add minimal ABI for whitelist check
+const NFT_WHITELIST_ABI = [
+  {
+    "inputs": [
+      { "internalType": "address", "name": "", "type": "address" }
+    ],
+    "name": "whitelist",
+    "outputs": [
+      { "internalType": "bool", "name": "", "type": "bool" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
+function TraitsSection({ traits }: { traits: any[] }) {
+  const [expanded, setExpanded] = React.useState(false);
+  const showExpand = traits.length > 3;
+  const visibleTraits = expanded ? traits : traits.slice(0, 3);
+  return (
+    <div className="w-full bg-pink-50 border border-pink-200 rounded-lg p-2 mb-2">
+      <div className="text-xs font-semibold text-pink-600 mb-1 ml-1">Traits</div>
+      <div className="grid grid-cols-2 gap-2">
+        {visibleTraits.map((trait: any, idx: number) => (
+          <span key={idx} className="inline-flex items-center px-4 py-1 rounded-full bg-white border border-pink-100 text-[13px] text-pink-700 justify-center">
+            <span className="text-gray-500 font-normal mr-1">{trait.type}:</span>
+            <span className="font-semibold text-pink-700 whitespace-nowrap">{trait.value}</span>
+          </span>
+        ))}
+        {/* Fill empty columns for alignment if less than 3 traits */}
+        {Array.from({ length: 3 - (visibleTraits.length % 3 || 3) }).map((_, i) => (
+          <span key={`empty-${i}`} className="" />
+        ))}
+      </div>
+      {showExpand && (
+        <button
+          className="mt-2 text-xs text-pink-500 hover:underline focus:outline-none"
+          onClick={() => setExpanded(e => !e)}
+        >
+          {expanded ? 'Show less' : `Show all (${traits.length})`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void }) {
   const [selected, setSelected] = useState("home");
   const [showLaunchpadModal, setShowLaunchpadModal] = useState(false);
@@ -98,6 +145,7 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
   const { writeContractAsync } = useContractWrite();
   const [copiedType, setCopiedType] = useState<null | 'creator' | 'contract'>(null);
   const { isEthProviderAvailable, actions } = useMiniAppContext();
+  const [isWhitelisted, setIsWhitelisted] = useState<boolean | null>(null);
 
   // Fetch mintedPerWallet for the user
   const { data: mintedCount, refetch: refetchMintedCount } = useContractRead({
@@ -421,20 +469,7 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
                       </div>
                       {/* Traits/Attributes in always-3-column grid, wrapped in a container */}
                       {Array.isArray(selectedCollection.traits) && selectedCollection.traits.length > 0 && (
-                        <div className="w-full bg-pink-50 border border-pink-200 rounded-lg p-2 mb-2">
-                          <div className="text-xs font-semibold text-pink-600 mb-1 ml-1">Traits</div>
-                          <div className="grid grid-cols-3 gap-2">
-                            {selectedCollection.traits.map((trait: any, idx: number) => (
-                              <span key={idx} className="px-2 py-1 rounded-full bg-white border border-pink-100 text-[11px] text-pink-700 font-semibold flex items-center gap-1 justify-center">
-                                <span className="text-gray-500 font-normal">{trait.type}:</span> {trait.value}
-                              </span>
-                            ))}
-                            {/* Fill empty columns for alignment if less than 3 traits */}
-                            {Array.from({ length: 3 - (selectedCollection.traits.length % 3 || 3) }).map((_, i) => (
-                              <span key={`empty-${i}`} className="" />
-                            ))}
-                          </div>
-                        </div>
+                        <TraitsSection traits={selectedCollection.traits} />
                       )}
                       <hr className="w-full border-t border-pink-100 my-2" />
                       {/* Mint Price */}
@@ -472,7 +507,7 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
                               className="w-24 px-2 py-1 rounded-lg border border-pink-200 text-gray-900 text-sm text-center mb-1"
                               placeholder="Number to Mint"
                               id="mintAmountInput"
-                              disabled={minting || !canMintMore || mintingEnded}
+                              disabled={minting || !canMintMore || mintingEnded || (selectedCollection?.whitelistEnabled && isWhitelisted === false)}
                             />
                             {mintingEnded ? (
                               <button
@@ -485,10 +520,10 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
                               </button>
                             ) : (
                               <button
-                                className={`px-4 py-2 rounded-lg font-bold text-base shadow transition ${minting || chainId !== monadTestnet.id || !canMintMore ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-pink-500 text-white hover:bg-pink-600'}`}
+                                className={`px-4 py-2 rounded-lg font-bold text-base shadow transition ${minting || chainId !== monadTestnet.id || !canMintMore || (selectedCollection?.whitelistEnabled && isWhitelisted === false) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-pink-500 text-white hover:bg-pink-600'}`}
                                 style={{ minWidth: '120px', maxWidth: '180px' }}
                                 id="mintButton"
-                                disabled={minting || chainId !== monadTestnet.id || !canMintMore}
+                                disabled={minting || chainId !== monadTestnet.id || !canMintMore || (selectedCollection?.whitelistEnabled && isWhitelisted === false)}
                                 onClick={handleMint}
                               >
                                 {minting ? "Minting..." : "Mint"}
@@ -549,6 +584,14 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
                         <span>{!selectedCollection.mintEndDate || Number(selectedCollection.mintEndDate) === 0 ? '∞' : formatDate(selectedCollection.mintEndDate)}</span>
                       </div>
                     </div>
+                    {selectedCollection?.whitelistEnabled && (
+                      <div className="w-full flex flex-col items-center mb-2">
+                        <div className="text-xs text-pink-600 font-semibold mb-1">This collection is whitelisted. Only addresses on the whitelist can mint.</div>
+                        {address && selectedCollection.contractAddress && (
+                          <WhitelistChecker contractAddress={selectedCollection.contractAddress} address={address} onResult={setIsWhitelisted} />
+                        )}
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <CollectionsPage collections={collections} onSelectCollection={setSelectedCollection} />
@@ -626,6 +669,52 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
         steps={MINT_STEPS}
         onClose={() => setShowMintModal(false)}
       />
+    </div>
+  );
+}
+
+function WhitelistChecker({ contractAddress, address, onResult }: { contractAddress: string, address: string, onResult?: (result: boolean) => void }) {
+  const [showInput, setShowInput] = React.useState(false);
+  const [inputAddress, setInputAddress] = React.useState('');
+  const [checkAddress, setCheckAddress] = React.useState(address);
+  const { data, isLoading, refetch } = useWagmiContractRead({
+    address: contractAddress as `0x${string}`,
+    abi: NFT_WHITELIST_ABI,
+    functionName: 'whitelist',
+    args: [checkAddress],
+  });
+  React.useEffect(() => {
+    if (typeof data === 'boolean' && onResult && checkAddress === address) onResult(data as boolean);
+  }, [data, onResult, checkAddress, address]);
+  return (
+    <div className="flex flex-col items-center gap-1 mt-1">
+      <button
+        className="px-3 py-1 rounded bg-pink-100 text-pink-700 text-xs font-semibold hover:bg-pink-200 transition"
+        onClick={() => setShowInput(v => !v)}
+        disabled={isLoading}
+      >
+        {showInput ? 'Hide Address Input' : 'Check Whitelist Status'}
+      </button>
+      {showInput && (
+        <div className="flex flex-col items-center gap-1 mt-2">
+          <input
+            className="px-2 py-1 rounded border border-pink-200 text-xs text-gray-700 mb-1"
+            placeholder="Paste address to check"
+            value={inputAddress}
+            onChange={e => setInputAddress(e.target.value)}
+            style={{ minWidth: 260 }}
+          />
+          <button
+            className="px-2 py-1 rounded bg-pink-200 text-pink-800 text-xs font-semibold hover:bg-pink-300 transition"
+            onClick={() => setCheckAddress(inputAddress || address)}
+            disabled={isLoading || (!inputAddress && !address)}
+          >
+            Check
+          </button>
+        </div>
+      )}
+      {data === true && <span className="text-green-600 text-xs font-semibold">{checkAddress} is whitelisted!</span>}
+      {data === false && <span className="text-red-500 text-xs font-semibold">{checkAddress} is NOT whitelisted.</span>}
     </div>
   );
 }

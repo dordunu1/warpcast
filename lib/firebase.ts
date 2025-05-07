@@ -26,6 +26,7 @@ export interface NFTCollection {
   maxPerWallet: string;
   website?: string;
   createdAt: number;
+  whitelistEnabled?: boolean;
 }
 
 export async function createNFTCollection(collectionData: Omit<NFTCollection, 'id' | 'createdAt'>): Promise<string> {
@@ -33,6 +34,7 @@ export async function createNFTCollection(collectionData: Omit<NFTCollection, 'i
   const docRef = await addDoc(collectionsRef, {
     ...collectionData,
     createdAt: Date.now(),
+    whitelistEnabled: collectionData.whitelistEnabled || false,
   });
   return docRef.id;
 }
@@ -42,7 +44,8 @@ export async function getNFTCollections(): Promise<NFTCollection[]> {
   const querySnapshot = await getDocs(collectionsRef);
   return querySnapshot.docs.map(doc => ({
     id: doc.id,
-    ...doc.data()
+    ...doc.data(),
+    whitelistEnabled: doc.data().whitelistEnabled || false,
   } as NFTCollection));
 }
 
@@ -56,6 +59,7 @@ export async function getNFTCollectionById(id: string): Promise<NFTCollection | 
   const doc = querySnapshot.docs[0];
   return {
     id: doc.id,
-    ...doc.data()
+    ...doc.data(),
+    whitelistEnabled: doc.data().whitelistEnabled || false,
   } as NFTCollection;
 } 
