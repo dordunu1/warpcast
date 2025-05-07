@@ -1,32 +1,51 @@
+import axios from 'axios';
+
 const PINATA_JWT = process.env.NEXT_PUBLIC_PINATA_JWT;
-const PINATA_BASE_URL = 'https://api.pinata.cloud/pinning';
+const PINATA_API = 'https://api.pinata.cloud/pinning';
+const IPFS_GATEWAY = 'https://ipfs.io/ipfs/';
 
 export async function uploadFileToPinata(file: File): Promise<string> {
   const formData = new FormData();
   formData.append('file', file);
 
-  const res = await fetch(`${PINATA_BASE_URL}/pinFileToIPFS`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${PINATA_JWT}`,
-    },
-    body: formData,
-  });
-  if (!res.ok) throw new Error('Pinata file upload failed');
-  const data = await res.json();
-  return data.IpfsHash;
+  try {
+    const response = await axios.post(`${PINATA_API}/pinFileToIPFS`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        Authorization: `Bearer ${PINATA_JWT}`,
+      },
+      maxBodyLength: Infinity,
+    });
+    const ipfsHash = response.data.IpfsHash;
+    return `ipfs://${ipfsHash}`;
+  } catch (error) {
+    console.error('Error uploading file to IPFS:', error);
+    throw new Error('Failed to upload file to IPFS');
+  }
 }
 
-export async function uploadJSONToPinata(json: any): Promise<string> {
-  const res = await fetch(`${PINATA_BASE_URL}/pinJSONToIPFS`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${PINATA_JWT}`,
-    },
-    body: JSON.stringify(json),
-  });
-  if (!res.ok) throw new Error('Pinata JSON upload failed');
-  const data = await res.json();
-  return data.IpfsHash;
+export async function uploadJSONToPinata(metadata: any): Promise<string> {
+  try {
+    const response = await axios.post(
+      `${PINATA_API}/pinJSONToIPFS`,
+      metadata,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${PINATA_JWT}`,
+        },
+      }
+    );
+    return `ipfs://${response.data.IpfsHash}`;
+  } catch (error) {
+    console.error('Error uploading metadata to IPFS:', error);
+    throw new Error('Failed to upload metadata to IPFS');
+  }
+}
+
+// Utility to convert IPFS URL to HTTP URL for web display
+export function ipfsToHttp(ipfsUrl: string): string {
+  if (!ipfsUrl) return '';
+  if (ipfsUrl.startsWith('http')) return ipfsUrl;
+  return ipfsUrl.replace('ipfs://', IPFS_GATEWAY);
 } 

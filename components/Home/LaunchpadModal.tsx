@@ -1,6 +1,6 @@
 import React, { useState, ChangeEvent } from "react";
 import { FaTimes } from 'react-icons/fa';
-import { uploadFileToPinata, uploadJSONToPinata } from '../../lib/pinata';
+import { uploadFileToPinata, uploadJSONToPinata, ipfsToHttp } from '../../lib/pinata';
 import { createNFTCollection, NFTCollection } from '../../lib/firebase';
 import ProgressModal from './ProgressModal';
 import { useAccount, useContractRead, useContractWrite, useConnect, useSwitchChain, usePublicClient } from 'wagmi';
@@ -433,23 +433,22 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
     setCurrentStep(0);
     setError(null);
     try {
-      // Step 1: Upload media to IPFS
-      const mediaHash = await uploadFileToPinata(media);
-      const mediaUrl = `https://gateway.pinata.cloud/ipfs/${mediaHash}`;
+      // Step 1: Upload image to IPFS (returns ipfs://...)
+      const imageIpfsUrl = await uploadFileToPinata(media); // ipfs://Qm...
       setCurrentStep(1);
-      // Step 2: Create and upload metadata
+      // Step 2: Create and upload metadata (OpenSea standard only)
       const metadata = {
         name,
         description,
-        image: mediaUrl,
-        attributes: traits,
-        properties: {
-          category,
-          files: [{ uri: mediaUrl, type: media.type.startsWith('image') ? 'image' : 'video' }]
-        }
+        image: imageIpfsUrl,
+        external_url: website || '',
+        attributes: traits.map(trait => ({
+          trait_type: trait.type,
+          value: trait.value
+        })),
+        background_color: '000000'
       };
-      const metadataHash = await uploadJSONToPinata(metadata);
-      const metadataUrl = `https://gateway.pinata.cloud/ipfs/${metadataHash}`;
+      const metadataIpfsUrl = await uploadJSONToPinata(metadata); // ipfs://Qm...
       setCurrentStep(2);
       // Step 3: Onchain collection creation
       const isERC721 = nftType === 'erc721';
@@ -461,7 +460,7 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
           collectionType: isERC721 ? 'ERC721' : 'ERC1155',
           name,
           symbol,
-          metadataURI: metadataUrl,
+          metadataURI: metadataIpfsUrl, // Use ipfs://... for on-chain
           maxSupply: maxSupply ? BigInt(maxSupply) : BigInt(0),
           mintPrice: mintPrice ? parseEther(mintPrice) : BigInt(0),
           maxPerWallet: maxPerWallet ? BigInt(maxPerWallet) : BigInt(0),
@@ -510,7 +509,7 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
         }
       } catch (e) { /* fallback: leave blank if not found */ }
       setCurrentStep(3);
-      // Step 4: Save to Firebase
+      // Step 4: Save to Firebase (store ipfs://... for minting, convert to HTTP only for UI display)
       const collectionData: Omit<NFTCollection, 'id' | 'createdAt'> & {
         contractAddress?: string;
         mintStartDate?: number;
@@ -524,10 +523,14 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
         symbol,
         category,
         mintPrice,
-        traits,
-        mediaUrl,
+        traits: traits.map(trait => ({
+          type: trait.type,
+          value: trait.value,
+          display_type: 'string'
+        })),
+        mediaUrl: imageIpfsUrl, // ipfs://... for storage
         mediaType: media.type.startsWith('image') ? 'image' : 'video',
-        metadataUrl,
+        metadataUrl: metadataIpfsUrl, // ipfs://... for storage
         creatorAddress: address,
         contractAddress: nftContractAddress,
         mintStartDate: mintDate ? Math.floor(new Date(mintDate).getTime() / 1000) : Math.floor(Date.now() / 1000),

@@ -51,8 +51,8 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
   const [metadataHash, setMetadataHash] = useState<string>("");
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
-  const [shareLoading, setShareLoading] = useState(false);
-  const [shareLinkLoading, setShareLinkLoading] = useState(false);
+  const [shareScoreLoading, setShareScoreLoading] = useState(false);
+  const [shareGameLoading, setShareGameLoading] = useState(false);
 
   const { isConnected, address, chainId } = useAccount();
   const { data, isSuccess, isError, sendTransaction } = useSendTransaction();
@@ -233,7 +233,7 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
   };
 
   const handleShareToFarcaster = async () => {
-    setShareLoading(true);
+    setShareScoreLoading(true);
     try {
       const gameNode = document.getElementById("memory-game-screenshot");
       if (!gameNode) throw new Error("Game area not found");
@@ -289,17 +289,17 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
     } catch (e) {
       alert("Failed to share image: " + ((e as any)?.message || "Unknown error"));
     } finally {
-      setShareLoading(false);
+      setShareScoreLoading(false);
     }
   };
 
   const handleShareScoreLink = async () => {
-    setShareLinkLoading(true);
+    setShareScoreLoading(true);
     try {
       const gameNode = document.getElementById("memory-game-screenshot");
       if (!gameNode) throw new Error("Game area not found");
       const canvas = await html2canvas(gameNode);
-      // Add padding and random background color (reuse mint logic)
+      // Add padding and random background color
       const PADDING = 25;
       const BG_COLORS = [
         "#fffbe6", // light yellow
@@ -318,10 +318,12 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
         ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
         ctx.drawImage(canvas, PADDING, PADDING);
       }
+      // Convert to base64 (remove data:image/png;base64, prefix)
       const dataUrl = paddedCanvas.toDataURL("image/png");
+      const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
       const imgurClientId = process.env.NEXT_PUBLIC_IMGUR_CLIENT_ID || "0c42b41cbbb1203";
       const formData = new FormData();
-      formData.append("image", dataUrl.split(",")[1]); // base64 data only
+      formData.append("image", base64Data);
       const res = await fetch("https://api.imgur.com/3/image", {
         method: "POST",
         headers: {
@@ -332,31 +334,36 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
       const data = await res.json();
       if (!data.success) throw new Error("Imgur upload failed: " + (data.data?.error || ""));
       const imageUrl = data.data.link;
-      // Build the share link to the /share page
-      const shareUrl = `${window.location.origin}/share?img=${encodeURIComponent(imageUrl)}&score=${encodeURIComponent(score)}`;
       const text = `🎮 Just scored ${score} in Fun & Fund! 🎯 Think you can beat my score? Challenge accepted! 🏆 Play now and show me what you've got! 🚀`;
-      // Use Farcaster SDK's composeCast action instead of window.open
       if (actions) {
         await actions.composeCast({
           text,
-          embeds: [shareUrl],
+          embeds: [imageUrl],
         });
       } else {
-        // Fallback for non-Farcaster environment
-        const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(shareUrl)}`;
+        const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(imageUrl)}`;
         window.open(url, "_blank");
       }
     } catch (e) {
       alert("Failed to share score link: " + ((e as any)?.message || "Unknown error"));
     } finally {
-      setShareLinkLoading(false);
+      setShareScoreLoading(false);
     }
   };
 
-  const handleShareGameLink = () => {
+  const handleShareGameLink = async () => {
+    setShareGameLoading(true);
     const text = `🎮 I just scored ${score} on Memory Game, can you beat me?? 🚀 Play Fun & Fund now!`;
-    const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(MINIAPP_URL)}`;
-    window.open(url, "_blank");
+    if (actions) {
+      await actions.composeCast({
+        text,
+        embeds: [MINIAPP_URL],
+      });
+    } else {
+      const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(MINIAPP_URL)}`;
+      window.open(url, "_blank");
+    }
+    setShareGameLoading(false);
   };
 
   return (
@@ -474,16 +481,16 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
             <button
               className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-base min-w-[120px] transition"
               onClick={handleShareScoreLink}
-              disabled={shareLinkLoading}
+              disabled={shareScoreLoading}
             >
-              {shareLinkLoading ? "Sharing..." : "Share Score Card"}
+              {shareScoreLoading ? "Sharing..." : "Share Score Card"}
             </button>
             <button
               className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg text-base min-w-[120px] transition"
               onClick={handleShareGameLink}
-              disabled={shareLinkLoading}
+              disabled={shareGameLoading}
             >
-              {shareLinkLoading ? "Sharing..." : "Share to Farcaster"}
+              {shareGameLoading ? "Sharing..." : "Share to Farcaster"}
             </button>
           </div>
           {showShareModal && (
@@ -508,9 +515,9 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
                 <button
                   className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg text-sm w-full disabled:opacity-50 transition"
                   onClick={handleShareToFarcaster}
-                  disabled={shareLoading}
+                  disabled={shareScoreLoading}
                 >
-                  {shareLoading ? "Sharing..." : "Share to Farcaster"}
+                  {shareScoreLoading ? "Sharing..." : "Share to Farcaster"}
                 </button>
               </div>
             </div>

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FaPaintBrush, FaRocket, FaCoins, FaThList, FaHome, FaMusic, FaCamera, FaGamepad, FaGem, FaEllipsisH, FaDiscord, FaTwitter } from "react-icons/fa";
+import { FaPaintBrush, FaRocket, FaCoins, FaThList, FaHome, FaMusic, FaCamera, FaGamepad, FaGem, FaEllipsisH, FaDiscord, FaTwitter, FaShareAlt } from "react-icons/fa";
 import DrawingCanvas from "./DrawingCanvas";
 import LaunchpadModal from "./LaunchpadModal";
 import CollectionsPage from "./CollectionsPage";
@@ -9,6 +9,8 @@ import ProgressModal from "./ProgressModal";
 import { useAccount, useConnect, useSwitchChain, usePublicClient, useContractWrite, useContractRead } from "wagmi";
 import { parseEther, parseGwei } from "viem";
 import { monadTestnet } from "viem/chains";
+import { useMiniAppContext } from "@/hooks/use-miniapp-context";
+import { ipfsToHttp } from '../../lib/pinata';
 
 const NAV_ITEMS = [
   { key: "home", label: "Home", icon: <FaHome /> },
@@ -95,6 +97,7 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
   const publicClient = usePublicClient();
   const { writeContractAsync } = useContractWrite();
   const [copiedType, setCopiedType] = useState<null | 'creator' | 'contract'>(null);
+  const { isEthProviderAvailable, actions } = useMiniAppContext();
 
   // Fetch mintedPerWallet for the user
   const { data: mintedCount, refetch: refetchMintedCount } = useContractRead({
@@ -145,32 +148,33 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
         throw new Error("Please switch to Monad Testnet.");
       }
       setMintStep(1);
-      // Step 1: Send transaction
+
+      // Step 1: Use the stored metadataUrl from the collection (must be ipfs://...)
+      const metadataIpfsUri = selectedCollection.metadataUrl;
+      if (!metadataIpfsUri || !metadataIpfsUri.startsWith('ipfs://')) {
+        throw new Error('Invalid or missing metadata URI for this collection.');
+      }
+
+      // Step 2: Mint NFT with metadata URI
+      setMintStep(2);
       const mintInput = document.getElementById("mintAmountInput") as HTMLInputElement;
       const quantity = Math.max(1, Math.min(Number(mintInput?.value || 1), Number(selectedCollection.maxPerWallet || selectedCollection.totalSupply || 1)));
       const contractAddress = selectedCollection.contractAddress;
       if (!contractAddress) throw new Error("NFT contract address not found.");
       const mintPrice = parseEther(selectedCollection.mintPrice || "0");
       const value = mintPrice * BigInt(quantity);
-      // Debugging output
-      console.log('Minting NFT with:');
-      console.log('Contract address:', contractAddress);
-      console.log('Metadata URL:', selectedCollection.metadataUrl);
-      console.log('Mint price:', selectedCollection.mintPrice);
-      console.log('Value (wei):', value.toString());
-      console.log('Quantity:', quantity);
-      setMintStep(2);
       const tx = await writeContractAsync({
         abi: NFT_ABI,
         address: contractAddress as `0x${string}`,
         functionName: "mint",
-        args: [quantity, selectedCollection.metadataUrl],
+        args: [quantity, metadataIpfsUri],
         value,
         gas: BigInt(2_000_000),
         gasPrice: parseGwei("0.1"),
       });
       setMintTxHash(tx);
-      // Step 2: Wait for confirmation
+
+      // Step 3: Wait for confirmation
       if (!publicClient) throw new Error("Blockchain client not available.");
       const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
       if (receipt.status !== "success") throw new Error("Transaction failed. Please try again.");
@@ -200,6 +204,107 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
     copyToClipboard(text);
     setCopiedType(type);
     setTimeout(() => setCopiedType(null), 1500);
+  }
+
+  // Share screenshot logic for the mint card
+  async function handleShareMintPage() {
+    try {
+      const mintArea = document.getElementById("mint-screenshot-area");
+      if (!mintArea) throw new Error("Mint area not found");
+      // Hide the share button during screenshot
+      const shareBtn = mintArea.querySelector('.share-btn');
+      if (shareBtn) (shareBtn as HTMLElement).style.display = 'none';
+      // Add screenshot-mode class for better rendering
+      mintArea.classList.add('screenshot-mode');
+      // Wait for all images to load
+      const images = mintArea.querySelectorAll('img');
+      await Promise.all(Array.from(images).map(img => {
+        if (!img.complete) {
+          return new Promise(resolve => {
+            img.onload = resolve;
+            img.onerror = resolve;
+          });
+        }
+        return Promise.resolve();
+      }));
+      // Wait for fonts (if supported)
+      if (document.fonts && document.fonts.ready) {
+        await document.fonts.ready;
+      }
+      // Screenshot technique from MemoryGame.tsx
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(mintArea, { useCORS: true });
+      // Add padding and random background color
+      const PADDING = 25;
+      const BG_COLORS = [
+        "#fffbe6", // light yellow
+        "#e0e7ff", // light blue
+        "#ffe4fa", // light pink
+        "#e0ffe4", // light green
+        "#f3e8ff"  // light purple
+      ];
+      const bgColor = BG_COLORS[Math.floor(Math.random() * BG_COLORS.length)];
+      const paddedCanvas = document.createElement("canvas");
+      paddedCanvas.width = canvas.width + PADDING * 2;
+      paddedCanvas.height = canvas.height + PADDING * 2;
+      const ctx = paddedCanvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = bgColor;
+        ctx.fillRect(0, 0, paddedCanvas.width, paddedCanvas.height);
+        ctx.drawImage(canvas, PADDING, PADDING);
+      }
+      // Remove screenshot-mode and show share button again
+      mintArea.classList.remove('screenshot-mode');
+      if (shareBtn) (shareBtn as HTMLElement).style.display = '';
+      const dataUrl = paddedCanvas.toDataURL("image/png");
+      const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+      const imgurClientId = process.env.NEXT_PUBLIC_IMGUR_CLIENT_ID || "0c42b41cbbb1203";
+      const formData = new FormData();
+      formData.append("image", base64Data);
+      const res = await fetch("https://api.imgur.com/3/image", {
+        method: "POST",
+        headers: { Authorization: `Client-ID ${imgurClientId}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error("Imgur upload failed: " + (data.data?.error || ""));
+      const imageUrl = data.data.link;
+      const text = `Check out this NFT collection on Fun & Fund! Mint yours or explore more.`;
+      // Use Farcaster Mini App composeCast if available
+      if (typeof window !== 'undefined' && (window as any).actions && typeof (window as any).actions.composeCast === 'function') {
+        await (window as any).actions.composeCast({ text, embeds: [imageUrl] });
+      } else if (actions && typeof actions.composeCast === 'function') {
+        await actions.composeCast({ text, embeds: [imageUrl] });
+      } else {
+        // Fallback to Warpcast compose
+        const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(imageUrl)}`;
+        window.open(url, "_blank");
+      }
+    } catch (e) {
+      alert("Failed to share: " + ((e as any)?.message || "Unknown error"));
+    }
+  }
+
+  // Add screenshot-mode CSS for better screenshot rendering (loosened: preserve original style, only hide share button and set white bg)
+  if (typeof window !== 'undefined') {
+    const style = document.createElement('style');
+    style.innerHTML = `
+      #mint-screenshot-area.screenshot-mode {
+        background: #fff !important;
+      }
+      #mint-screenshot-area.screenshot-mode .share-btn {
+        display: none !important;
+      }
+      #mint-screenshot-area.screenshot-mode h2 {
+        background: none !important;
+        color: #ec4899 !important;
+        -webkit-background-clip: initial !important;
+        -webkit-text-fill-color: initial !important;
+        text-shadow: none !important;
+        text-transform: none !important;
+      }
+    `;
+    document.head.appendChild(style);
   }
 
   return (
@@ -258,149 +363,157 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
             ? (
                 selectedCollection ? (
                   <div className="w-full max-w-lg mx-auto bg-white/90 rounded-2xl shadow-xl p-4 mt-4">
-                    <button className="mb-3 text-pink-500 font-bold hover:underline flex items-center gap-1" onClick={() => setSelectedCollection(null)}>
-                      <span className="text-lg">←</span> Back to Collections
-                    </button>
-                    {/* NFT image, name, symbol grid */}
-                    <div className="flex flex-row items-center gap-4 w-full mb-2">
-                      {selectedCollection.mediaType === 'image' ? (
-                        <img src={selectedCollection.mediaUrl} alt="preview" className="rounded-lg w-36 h-36 object-cover border border-pink-100 shadow" />
-                      ) : (
-                        <video src={selectedCollection.mediaUrl} controls className="rounded-lg w-36 h-36 object-cover border border-pink-100 shadow" />
-                      )}
-                      <div className="flex flex-col items-start justify-center flex-1 min-w-0">
-                        <h2 className="text-lg font-extrabold bg-gradient-to-r from-pink-500 to-pink-400 bg-clip-text text-transparent mb-1 truncate w-full">{selectedCollection.name}</h2>
-                        <div className="text-gray-500 font-semibold text-xs truncate w-full">Symbol: <span className="text-gray-700 text-xs">{selectedCollection.symbol}</span></div>
-                        <div className="flex items-center gap-2 text-base text-gray-700 font-semibold mt-1">
-                          {categoryIcons[selectedCollection.category] || categoryIcons['Other']}
-                          <span className="ml-1">{selectedCollection.category}</span>
+                    <div id="mint-screenshot-area" className="relative">
+                      {/* Share button in top right corner */}
+                      <button
+                        className="absolute top-2 right-2 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-white border border-pink-200 shadow hover:bg-pink-50 transition share-btn"
+                        title="Share this collection on Farcaster"
+                        onClick={handleShareMintPage}
+                      >
+                        <FaShareAlt className="text-pink-500 text-xl" />
+                      </button>
+                      <button className="mb-3 text-pink-500 font-bold hover:underline flex items-center gap-1" onClick={() => setSelectedCollection(null)}>
+                        <span className="text-lg">←</span> Back to Collections
+                      </button>
+                      {/* NFT image, name, symbol grid */}
+                      <div className="flex flex-row items-center gap-4 w-full mb-2">
+                        {selectedCollection.mediaType === 'image' ? (
+                          <img src={ipfsToHttp(selectedCollection.mediaUrl)} alt="preview" className="rounded-lg w-36 h-36 object-cover border border-pink-100 shadow" />
+                        ) : (
+                          <video src={ipfsToHttp(selectedCollection.mediaUrl)} controls className="rounded-lg w-36 h-36 object-cover border border-pink-100 shadow" />
+                        )}
+                        <div className="flex flex-col items-start justify-center flex-1 min-w-0 py-3">
+                          <h2 className="text-2xl font-extrabold bg-gradient-to-r from-pink-500 to-pink-400 bg-clip-text text-transparent mb-2 truncate w-full">{selectedCollection.name}</h2>
+                          <div className="text-gray-500 font-semibold text-base truncate w-full mb-1">Symbol: <span className="text-gray-700 text-base">{selectedCollection.symbol}</span></div>
+                          <div className="flex items-center gap-2 text-base text-gray-700 font-semibold mt-1">
+                            {categoryIcons[selectedCollection.category] || categoryIcons['Other']}
+                            <span className="ml-1">{selectedCollection.category}</span>
+                          </div>
+                          {(selectedCollection.discord || selectedCollection.twitter) && (
+                            <div className="flex gap-4 items-center mt-1 mb-1 justify-start">
+                              {selectedCollection.discord && (
+                                <a href={selectedCollection.discord.startsWith('http') ? selectedCollection.discord : `https://discord.gg/${selectedCollection.discord}`} target="_blank" rel="noopener noreferrer" title="Discord" aria-label="Discord">
+                                  <FaDiscord className="text-2xl text-indigo-500 hover:text-indigo-700 transition" />
+                                </a>
+                              )}
+                              {selectedCollection.twitter && (
+                                <a href={selectedCollection.twitter.startsWith('http') ? selectedCollection.twitter : `https://twitter.com/${selectedCollection.twitter.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" title="Twitter" aria-label="Twitter">
+                                  <FaTwitter className="text-2xl text-blue-400 hover:text-blue-600 transition" />
+                                </a>
+                              )}
+                            </div>
+                          )}
                         </div>
-                        {/* Social Links moved here, under category */}
-                        {(selectedCollection.discord || selectedCollection.twitter) && (
-                          <div className="flex gap-4 items-center mt-1 mb-1 justify-start">
-                            {selectedCollection.discord && (
-                              <a href={selectedCollection.discord.startsWith('http') ? selectedCollection.discord : `https://discord.gg/${selectedCollection.discord}`} target="_blank" rel="noopener noreferrer" title="Discord" aria-label="Discord">
-                                <FaDiscord className="text-2xl text-indigo-500 hover:text-indigo-700 transition" />
-                              </a>
-                            )}
-                            {selectedCollection.twitter && (
-                              <a href={selectedCollection.twitter.startsWith('http') ? selectedCollection.twitter : `https://twitter.com/${selectedCollection.twitter.replace(/^@/, '')}`} target="_blank" rel="noopener noreferrer" title="Twitter" aria-label="Twitter">
-                                <FaTwitter className="text-2xl text-blue-400 hover:text-blue-600 transition" />
-                              </a>
+                      </div>
+                      {/* Description Section in a container, with show more/less */}
+                      <div className="w-full bg-pink-50 border border-pink-200 rounded-lg p-2 mb-3">
+                        <div className="text-xs font-semibold text-pink-600 mb-1 ml-1">Description</div>
+                        <div className="text-gray-700 text-base text-center whitespace-pre-line px-2 break-words">
+                          {selectedCollection.description.length > 120 && !descExpanded
+                            ? <>{selectedCollection.description.slice(0, 120)}... <button className="text-pink-500 underline text-xs font-semibold" onClick={() => setDescExpanded(true)}>Read more</button></>
+                            : <>{selectedCollection.description} {selectedCollection.description.length > 120 && <button className="text-pink-500 underline text-xs font-semibold" onClick={() => setDescExpanded(false)}>Show less</button>}</>
+                          }
+                        </div>
+                      </div>
+                      {/* Traits/Attributes in always-3-column grid, wrapped in a container */}
+                      {Array.isArray(selectedCollection.traits) && selectedCollection.traits.length > 0 && (
+                        <div className="w-full bg-pink-50 border border-pink-200 rounded-lg p-2 mb-2">
+                          <div className="text-xs font-semibold text-pink-600 mb-1 ml-1">Traits</div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {selectedCollection.traits.map((trait: any, idx: number) => (
+                              <span key={idx} className="px-2 py-1 rounded-full bg-white border border-pink-100 text-[11px] text-pink-700 font-semibold flex items-center gap-1 justify-center">
+                                <span className="text-gray-500 font-normal">{trait.type}:</span> {trait.value}
+                              </span>
+                            ))}
+                            {/* Fill empty columns for alignment if less than 3 traits */}
+                            {Array.from({ length: 3 - (selectedCollection.traits.length % 3 || 3) }).map((_, i) => (
+                              <span key={`empty-${i}`} className="" />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <hr className="w-full border-t border-pink-100 my-2" />
+                      {/* Mint Price */}
+                      <div className="flex items-center gap-2 text-lg text-gray-900 font-extrabold mb-2 justify-center">
+                        Mint Price:
+                        <span className="ml-1 text-pink-500">{selectedCollection.mintPrice} MON</span>
+                        <img src="/images/monad.png" alt="MON" className="w-5 h-5 ml-1 inline-block align-middle" />
+                      </div>
+                      {/* Mint Controls */}
+                      <div className="flex flex-col items-center gap-2 mt-2 mb-2">
+                        {/* Wallet connect and network switch controls, compact like DonationApp */}
+                        {!address ? (
+                          <button
+                            className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white font-bold py-1 px-3 rounded-full text-xs shadow mb-1 disabled:opacity-50"
+                            onClick={() => connect({ connector: connectors[0] })}
+                          >
+                            Connect Wallet
+                          </button>
+                        ) : chainId !== monadTestnet.id ? (
+                          <button
+                            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-1 px-3 rounded-full text-xs shadow mb-1"
+                            onClick={() => switchChain({ chainId: monadTestnet.id })}
+                          >
+                            Switch to Monad Testnet
+                          </button>
+                        ) : null}
+                        {/* Mint input and button only if connected and on Monad */}
+                        {address && chainId === monadTestnet.id && (
+                          <div className="flex items-center gap-2 w-full justify-center">
+                            <input
+                              type="number"
+                              min={1}
+                              max={remaining}
+                              defaultValue={1}
+                              className="w-24 px-2 py-1 rounded-lg border border-pink-200 text-gray-900 text-sm text-center mb-1"
+                              placeholder="Number to Mint"
+                              id="mintAmountInput"
+                              disabled={minting || !canMintMore || mintingEnded}
+                            />
+                            {mintingEnded ? (
+                              <button
+                                className="px-4 py-2 rounded-lg bg-gray-300 text-gray-500 font-bold text-base shadow cursor-not-allowed"
+                                style={{ minWidth: '120px', maxWidth: '180px' }}
+                                id="mintButton"
+                                disabled
+                              >
+                                Mint Ended
+                              </button>
+                            ) : (
+                              <button
+                                className={`px-4 py-2 rounded-lg font-bold text-base shadow transition ${minting || chainId !== monadTestnet.id || !canMintMore ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-pink-500 text-white hover:bg-pink-600'}`}
+                                style={{ minWidth: '120px', maxWidth: '180px' }}
+                                id="mintButton"
+                                disabled={minting || chainId !== monadTestnet.id || !canMintMore}
+                                onClick={handleMint}
+                              >
+                                {minting ? "Minting..." : "Mint"}
+                              </button>
                             )}
                           </div>
                         )}
-                      </div>
-                    </div>
-                    {/* Description Section in a container, with show more/less */}
-                    <div className="w-full bg-pink-50 border border-pink-200 rounded-lg p-2 mb-3">
-                      <div className="text-xs font-semibold text-pink-600 mb-1 ml-1">Description</div>
-                      <div className="text-gray-700 text-base text-center whitespace-pre-line px-2 break-words">
-                        {selectedCollection.description.length > 120 && !descExpanded
-                          ? <>{selectedCollection.description.slice(0, 120)}... <button className="text-pink-500 underline text-xs font-semibold" onClick={() => setDescExpanded(true)}>Read more</button></>
-                          : <>{selectedCollection.description} {selectedCollection.description.length > 120 && <button className="text-pink-500 underline text-xs font-semibold" onClick={() => setDescExpanded(false)}>Show less</button>}</>
-                        }
-                      </div>
-                    </div>
-                    {/* Traits/Attributes in always-3-column grid, wrapped in a container */}
-                    {Array.isArray(selectedCollection.traits) && selectedCollection.traits.length > 0 && (
-                      <div className="w-full bg-pink-50 border border-pink-200 rounded-lg p-2 mb-2">
-                        <div className="text-xs font-semibold text-pink-600 mb-1 ml-1">Traits</div>
-                        <div className="grid grid-cols-3 gap-2">
-                          {selectedCollection.traits.map((trait: any, idx: number) => (
-                            <span key={idx} className="px-2 py-1 rounded-full bg-white border border-pink-100 text-[11px] text-pink-700 font-semibold flex items-center gap-1 justify-center">
-                              <span className="text-gray-500 font-normal">{trait.type}:</span> {trait.value}
-                            </span>
-                          ))}
-                          {/* Fill empty columns for alignment if less than 3 traits */}
-                          {Array.from({ length: 3 - (selectedCollection.traits.length % 3 || 3) }).map((_, i) => (
-                            <span key={`empty-${i}`} className="" />
-                          ))}
+                        <div className="flex gap-4 text-xs text-gray-600 mt-1">
+                          <span>Max per Wallet: <span className="font-bold">{maxPerWallet || '--'}</span></span>
+                          <span>Total Supply: <span className="font-bold">{selectedCollection.totalSupply || '--'}</span></span>
+                        </div>
+                        <div className="text-xs text-pink-600 mt-1">
+                          {!mintingEnded && (canMintMore
+                            ? `You have minted ${minted} of ${maxPerWallet}. You can mint ${remaining} more.`
+                            : `You have minted your maximum allocation for this collection.`)
+                          }
                         </div>
                       </div>
-                    )}
-                    <hr className="w-full border-t border-pink-100 my-2" />
-                    {/* Mint Price */}
-                    <div className="flex items-center gap-2 text-lg text-gray-900 font-extrabold mb-2 justify-center">
-                      Mint Price:
-                      <span className="ml-1 text-pink-500">{selectedCollection.mintPrice} MON</span>
-                      <img src="/images/monad.png" alt="MON" className="w-5 h-5 ml-1 inline-block align-middle" />
-                    </div>
-                    {/* Mint Controls */}
-                    <div className="flex flex-col items-center gap-2 mt-2 mb-2">
-                      {/* Wallet connect and network switch controls, compact like DonationApp */}
-                      {!address ? (
-                        <button
-                          className="flex items-center gap-2 bg-pink-500 hover:bg-pink-600 text-white font-bold py-1 px-3 rounded-full text-xs shadow mb-1 disabled:opacity-50"
-                          onClick={() => connect({ connector: connectors[0] })}
-                        >
-                          Connect Wallet
-                        </button>
-                      ) : chainId !== monadTestnet.id ? (
-                        <button
-                          className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold py-1 px-3 rounded-full text-xs shadow mb-1"
-                          onClick={() => switchChain({ chainId: monadTestnet.id })}
-                        >
-                          Switch to Monad Testnet
-                        </button>
-                      ) : null}
-                      {/* Mint input and button only if connected and on Monad */}
-                      {address && chainId === monadTestnet.id && (
-                        <>
-                          <input
-                            type="number"
-                            min={1}
-                            max={remaining}
-                            defaultValue={1}
-                            className="w-24 px-2 py-1 rounded-lg border border-pink-200 text-gray-900 text-sm text-center mb-1"
-                            placeholder="Number to Mint"
-                            id="mintAmountInput"
-                            disabled={minting || !canMintMore || mintingEnded}
-                          />
-                          {mintingEnded ? (
-                            <button
-                              className="px-4 py-2 rounded-lg bg-gray-300 text-gray-500 font-bold text-base shadow cursor-not-allowed"
-                              style={{ minWidth: '120px', maxWidth: '180px' }}
-                              id="mintButton"
-                              disabled
-                            >
-                              Mint Ended
-                            </button>
-                          ) : (
-                            <button
-                              className={`px-4 py-2 rounded-lg font-bold text-base shadow transition ${minting || chainId !== monadTestnet.id || !canMintMore ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-pink-500 text-white hover:bg-pink-600'}`}
-                              style={{ minWidth: '120px', maxWidth: '180px' }}
-                              id="mintButton"
-                              disabled={minting || chainId !== monadTestnet.id || !canMintMore}
-                              onClick={handleMint}
-                            >
-                              {minting ? "Minting..." : "Mint"}
-                            </button>
-                          )}
-                        </>
-                      )}
-                      <div className="flex gap-4 text-xs text-gray-600 mt-1">
-                        <span>Max per Wallet: <span className="font-bold">{maxPerWallet || '--'}</span></span>
-                        <span>Total Supply: <span className="font-bold">{selectedCollection.totalSupply || '--'}</span></span>
-                      </div>
-                      <div className="text-xs text-pink-600 mt-1">
-                        {!mintingEnded && (canMintMore
-                          ? `You have minted ${minted} of ${maxPerWallet}. You can mint ${remaining} more.`
-                          : `You have minted your maximum allocation for this collection.`)
-                        }
+                      {/* Mint Progress Bar */}
+                      <div className="w-full mt-1">
+                        <div className="flex justify-between text-xs text-gray-500 mb-1">
+                          <span>{minted} minted</span>
+                          <span>Max: {selectedCollection.totalSupply || '--'}</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-3">
+                          <div className="bg-gradient-to-r from-pink-500 to-blue-400 h-3 rounded-full" style={{ width: `${Math.min(100, (minted / maxPerWallet) * 100)}%` }} />
+                        </div>
                       </div>
                     </div>
-                    {/* Mint Progress Bar */}
-                    <div className="w-full mt-1">
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>{minted} minted</span>
-                        <span>Max: {selectedCollection.totalSupply || '--'}</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div className="bg-gradient-to-r from-pink-500 to-blue-400 h-3 rounded-full" style={{ width: `${Math.min(100, (minted / maxPerWallet) * 100)}%` }} />
-                      </div>
-                    </div>
-                    <hr className="w-full border-t border-pink-100 my-2" />
                     {/* Details Containers */}
                     <div className="w-full flex flex-col gap-2 mt-4">
                       <div className="rounded bg-white/80 shadow p-3 flex items-center gap-2 text-xs text-gray-600">

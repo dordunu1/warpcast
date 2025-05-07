@@ -2,26 +2,30 @@ import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 import { db } from './firebase-config';
 
 export interface NFTCollection {
-  id?: string;
+  id: string;
   name: string;
   description: string;
   symbol: string;
   category: string;
   mintPrice: string;
-  traits?: any[];
+  traits: Array<{
+    type: string;
+    value: string;
+    display_type?: string;
+  }>;
   mediaUrl: string;
   mediaType: 'image' | 'video';
   metadataUrl: string;
   creatorAddress: string;
-  createdAt: number;
-  maxPerWallet?: string;
-  totalSupply?: string;
   contractAddress?: string;
-  mintStartDate?: number | string;
-  mintEndDate?: number | string;
-  collectionType?: string;
-  discord?: string;
-  twitter?: string;
+  mintStartDate?: number;
+  mintEndDate?: number;
+  totalSupply?: string;
+  discord: string;
+  twitter: string;
+  maxPerWallet: string;
+  website?: string;
+  createdAt: number;
 }
 
 export async function createNFTCollection(collectionData: Omit<NFTCollection, 'id' | 'createdAt'>): Promise<string> {
