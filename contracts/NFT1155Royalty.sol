@@ -2,11 +2,11 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/common/ERC2981.sol";
-import "./NFT721.sol";
+import "./NFT1155.sol";
 
-contract NFT721Royalty is NFT721, ERC2981 {
-    constructor() NFT721() {
-        // Constructor remains empty
+contract NFT1155Royalty is NFT1155, ERC2981 {
+    constructor() NFT1155() {
+        // Constructor remains the same
     }
 
     // Initialize with royalty info
@@ -19,35 +19,31 @@ contract NFT721Royalty is NFT721, ERC2981 {
         address royaltyReceiver,
         uint96 royaltyFeeNumerator
     ) external {
-        // Initialize the parent contract first
-        (bool success,) = address(this).call(
-            abi.encodeWithSelector(
-                NFT721.initialize.selector,
-                _name,
-                _symbol,
-                _baseURI,
-                _config,
-                _owner
-            )
-        );
-        require(success, "Parent initialization failed");
+        require(!initialized, "Already initialized");
+        name = _name;
+        symbol = _symbol;
+        baseURI = _baseURI;
+        config = _config;
+        owner = _owner;
+        initialized = true;
 
         // Set royalty info
         _setDefaultRoyalty(royaltyReceiver, royaltyFeeNumerator);
     }
 
-    // Override supportsInterface to support both ERC721 and ERC2981
+    // Override supportsInterface to support both ERC1155 and ERC2981
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721, ERC2981)
+        override(ERC1155, ERC2981)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
     }
 
     // Allow owner to update royalty info
-    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external onlyOwner {
+    function setDefaultRoyalty(address receiver, uint96 feeNumerator) external {
+        require(msg.sender == owner, "Not owner");
         _setDefaultRoyalty(receiver, feeNumerator);
     }
 
@@ -56,7 +52,8 @@ contract NFT721Royalty is NFT721, ERC2981 {
         uint256 tokenId,
         address receiver,
         uint96 feeNumerator
-    ) external onlyOwner {
+    ) external {
+        require(msg.sender == owner, "Not owner");
         _setTokenRoyalty(tokenId, receiver, feeNumerator);
     }
-}
+}  

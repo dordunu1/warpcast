@@ -150,9 +150,13 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
       setMintStep(1);
 
       // Step 1: Use the stored metadataUrl from the collection (must be ipfs://...)
-      const metadataIpfsUri = selectedCollection.metadataUrl;
+      let metadataIpfsUri = selectedCollection.metadataUrl;
       if (!metadataIpfsUri || !metadataIpfsUri.startsWith('ipfs://')) {
         throw new Error('Invalid or missing metadata URI for this collection.');
+      }
+      // Strip 'ipfs://' prefix for contract call
+      if (metadataIpfsUri.startsWith('ipfs://')) {
+        metadataIpfsUri = metadataIpfsUri.replace('ipfs://', '');
       }
 
       // Step 2: Mint NFT with metadata URI

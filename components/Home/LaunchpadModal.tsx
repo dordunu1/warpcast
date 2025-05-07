@@ -6,6 +6,7 @@ import ProgressModal from './ProgressModal';
 import { useAccount, useContractRead, useContractWrite, useConnect, useSwitchChain, usePublicClient } from 'wagmi';
 import { parseEther, formatEther, parseGwei, parseAbiItem, getEventSelector, decodeEventLog } from 'viem';
 import { monadTestnet } from 'viem/chains';
+import axios from 'axios';
 
 interface Trait {
   type: string;
@@ -138,6 +139,21 @@ const NFT_FACTORY_ABI = [
 
 // Hardcoded creation fee (in MON)
 const CREATION_FEE_MON = '2';
+
+// Utility to check if an IPFS hash is available on the gateway
+async function verifyIpfsAvailability(ipfsHash: string, maxRetries = 5, delayMs = 2000): Promise<boolean> {
+  const url = `https://ipfs.io/ipfs/${ipfsHash}`;
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const res = await axios.head(url, { timeout: 5000 });
+      if (res.status === 200) return true;
+    } catch (e) {
+      // wait and retry
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+  return false;
+}
 
 export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadModalProps) {
   const [step, setStep] = useState(0);
@@ -435,7 +451,16 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
     try {
       // Step 1: Upload image to IPFS (returns ipfs://...)
       const imageIpfsUrl = await uploadFileToPinata(media); // ipfs://Qm...
+      const imageHash = imageIpfsUrl.replace('ipfs://', '');
+      console.log('Image IPFS Hash:', imageHash);
       setCurrentStep(1);
+      // Step 1.5: Wait for image to be available on IPFS
+      const available = await verifyIpfsAvailability(imageHash);
+      if (!available) {
+        setError('Image not available on IPFS after several retries. Please try again.');
+        setShowProgress(false);
+        return;
+      }
       // Step 2: Create and upload metadata (OpenSea standard only)
       const metadata = {
         name,
@@ -449,6 +474,8 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
         background_color: '000000'
       };
       const metadataIpfsUrl = await uploadJSONToPinata(metadata); // ipfs://Qm...
+      const metadataHash = metadataIpfsUrl.replace('ipfs://', '');
+      console.log('Metadata IPFS Hash:', metadataHash);
       setCurrentStep(2);
       // Step 3: Onchain collection creation
       const isERC721 = nftType === 'erc721';
@@ -460,7 +487,7 @@ export default function LaunchpadModal({ open, onClose, onCreate }: LaunchpadMod
           collectionType: isERC721 ? 'ERC721' : 'ERC1155',
           name,
           symbol,
-          metadataURI: metadataIpfsUrl, // Use ipfs://... for on-chain
+          metadataURI: 'ipfs://', // Set base URI as just the protocol
           maxSupply: maxSupply ? BigInt(maxSupply) : BigInt(0),
           mintPrice: mintPrice ? parseEther(mintPrice) : BigInt(0),
           maxPerWallet: maxPerWallet ? BigInt(maxPerWallet) : BigInt(0),
