@@ -13,6 +13,8 @@ import { useMiniAppContext } from "@/hooks/use-miniapp-context";
 import { ipfsToHttp } from '../../lib/pinata';
 import { useContractRead as useWagmiContractRead } from 'wagmi';
 
+const MINIAPP_URL = process.env.NEXT_PUBLIC_MINIAPP_URL || "https://chrismini.netlify.app/";
+
 const NAV_ITEMS = [
   { key: "home", label: "Home", icon: <FaHome /> },
   { key: "canvas", label: "Canvas", icon: <FaPaintBrush /> },
@@ -321,15 +323,15 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
       const data = await res.json();
       if (!data.success) throw new Error("Imgur upload failed: " + (data.data?.error || ""));
       const imageUrl = data.data.link;
-      const text = `Check out this NFT collection on Fun & Fund! Mint yours or explore more.`;
+      const text = `Check out this NFT collection on Fun & Fund! Mint yours or explore more.\n\nMinted via: ${MINIAPP_URL}`;
       // Use Farcaster Mini App composeCast if available
       if (typeof window !== 'undefined' && (window as any).actions && typeof (window as any).actions.composeCast === 'function') {
-        await (window as any).actions.composeCast({ text, embeds: [imageUrl] });
+        await (window as any).actions.composeCast({ text, embeds: [imageUrl, MINIAPP_URL] });
       } else if (actions && typeof actions.composeCast === 'function') {
-        await actions.composeCast({ text, embeds: [imageUrl] });
+        await actions.composeCast({ text, embeds: [imageUrl, MINIAPP_URL] });
       } else {
         // Fallback to Warpcast compose
-        const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(imageUrl)}`;
+        const url = `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}&embeds[]=${encodeURIComponent(imageUrl)}&embeds[]=${encodeURIComponent(MINIAPP_URL)}`;
         window.open(url, "_blank");
       }
     } catch (e) {

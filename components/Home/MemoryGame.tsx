@@ -5,6 +5,7 @@ import { parseEther, encodeFunctionData, parseGwei } from "viem";
 import { monadTestnet } from "viem/chains";
 import { useMiniAppContext } from "@/hooks/use-miniapp-context";
 import html2canvas from "html2canvas";
+import { FaInfoCircle } from "react-icons/fa";
 
 const CARD_IMAGES = Array.from({ length: 8 }, (_, i) => `/images/${i + 1}.jpeg`);
 const TOTAL_PAIRS = 8;
@@ -53,6 +54,7 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
   const [shareMessage, setShareMessage] = useState("");
   const [shareScoreLoading, setShareScoreLoading] = useState(false);
   const [shareGameLoading, setShareGameLoading] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
 
   const { isConnected, address, chainId } = useAccount();
   const { data, isSuccess, isError, sendTransaction } = useSendTransaction();
@@ -368,6 +370,32 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
 
   return (
     <div id="memory-game-root" className="fixed inset-0 z-50 min-h-screen w-full !bg-black flex flex-col items-center justify-center overflow-auto">
+      {/* Info Icon and Modal */}
+      <div className="absolute top-4 right-4 z-50">
+        <button onClick={() => setShowInfo(true)} className="text-blue-400 hover:text-blue-600 text-2xl" title="How to play">
+          <FaInfoCircle />
+        </button>
+      </div>
+      {showInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-[340px] flex flex-col items-center relative">
+            <button
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-white/80 hover:bg-blue-100 border border-blue-200 text-blue-500 text-xl font-bold shadow-sm transition"
+              onClick={() => setShowInfo(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <div className="text-xl font-bold text-blue-600 mb-2">How to Play</div>
+            <ul className="text-gray-700 text-base list-disc pl-5 space-y-2 text-left">
+              <li>Flip two cards at a time to find matching pairs.</li>
+              <li>If the cards match, they stay revealed. If not, they flip back.</li>
+              <li>Try to match all pairs with the fewest moves and in the shortest time.</li>
+              <li>Your score increases with each match. Good luck!</li>
+            </ul>
+          </div>
+        </div>
+      )}
       {onBack && (
         <button
           className="absolute top-0 left-0 z-50 flex items-center gap-1 px-3 py-1 bg-white/80 text-gray-700 rounded-full text-sm font-medium hover:bg-white transition -translate-y-1"
