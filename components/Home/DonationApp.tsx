@@ -619,7 +619,7 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
               </div>
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-1">
-                  <label className="font-semibold">Goal Amount (MON)</label>
+                  <label className="font-semibold">Goal Amount (MON) <span className="text-red-500">*</span></label>
                   <button type="button" onClick={() => setShowGoalInfo(v => !v)} className="text-gray-400 hover:text-pink-400" title="About goal">
                     <span className="bg-blue-500 text-white rounded-full px-1">i</span>
                   </button>
@@ -630,6 +630,7 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
                   className="w-full p-2 border rounded-lg"
                   value={newDonation.goalAmount}
                   onChange={(e) => setNewDonation({...newDonation, goalAmount: Number(e.target.value)})}
+                  required
                 />
                 {showGoalInfo && (
                   <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded shadow-lg p-3 w-64 z-50 text-xs text-gray-700">
@@ -713,7 +714,8 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
               </button>
               <button
                 onClick={handleCreate}
-                className="px-4 py-2 bg-gradient-to-r from-pink-500 to-green-400 text-white rounded-lg"
+                className={`px-4 py-2 bg-gradient-to-r from-pink-500 to-green-400 text-white rounded-lg ${(!newDonation.goalAmount || newDonation.goalAmount <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={!newDonation.goalAmount || newDonation.goalAmount <= 0}
               >
                 Create Campaign
               </button>
