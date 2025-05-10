@@ -9,5 +9,9 @@ service cloud.firestore {
     match /nft_collections/{collectionId} {
       allow read, create, update, delete: if true;
     }
+
+    match /memoryLeaderboard/{entry} {
+      allow read, write: if true;
+    }
   }
 } 

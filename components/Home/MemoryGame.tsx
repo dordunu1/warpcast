@@ -6,6 +6,9 @@ import { monadTestnet } from "viem/chains";
 import { useMiniAppContext } from "@/hooks/use-miniapp-context";
 import html2canvas from "html2canvas";
 import { FaInfoCircle } from "react-icons/fa";
+import { useFrame } from "../farcaster-provider";
+import { db } from '../../lib/firebase-config';
+import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
 
 const CARD_IMAGES = Array.from({ length: 8 }, (_, i) => `/images/${i + 1}.jpeg`);
 const TOTAL_PAIRS = 8;
@@ -37,6 +40,22 @@ function getInitialCards() {
 }
 
 export default function MemoryGame({ onBack }: { onBack?: () => void }) {
+  const { isConnected, address, chainId } = useAccount();
+  const { context } = useFrame();
+  const farcasterName = context?.user?.displayName || context?.user?.username || (address ? address.slice(0, 8) : 'Anonymous');
+  const farcasterPfp = context?.user?.pfpUrl || `https://api.dicebear.com/7.x/notionists/svg?seed=${farcasterName}`;
+
+  // Leaderboard state
+  const [leaderboard, setLeaderboard] = useState<any[]>([]);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [submittingScore, setSubmittingScore] = useState(false);
+
+  const { data, isSuccess, isError, sendTransaction } = useSendTransaction();
+  const { switchChain, error: switchError } = useSwitchChain();
+  const { connect, connectors, error: connectError } = useConnect();
+  const { isEthProviderAvailable, actions } = useMiniAppContext();
+  const { data: balanceData } = useBalance({ address, chainId: monadTestnet.id });
+
   const [cards, setCards] = useState(getInitialCards());
   const [flipped, setFlipped] = useState<number[]>([]);
   const [matched, setMatched] = useState<number[]>([]);
@@ -55,13 +74,6 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
   const [shareScoreLoading, setShareScoreLoading] = useState(false);
   const [shareGameLoading, setShareGameLoading] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
-
-  const { isConnected, address, chainId } = useAccount();
-  const { data, isSuccess, isError, sendTransaction } = useSendTransaction();
-  const { switchChain, error: switchError } = useSwitchChain();
-  const { connect, connectors, error: connectError } = useConnect();
-  const { isEthProviderAvailable, actions } = useMiniAppContext();
-  const { data: balanceData } = useBalance({ address, chainId: monadTestnet.id });
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -92,6 +104,26 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
     if (matched.length === cards.length && cards.length > 0) {
       setIsActive(false);
       setMessage("Congratulations! You won!");
+
+      // Submit leaderboard entry
+      (async () => {
+        setSubmittingScore(true);
+        try {
+          await addDoc(collection(db, "memoryLeaderboard"), {
+            name: farcasterName,
+            pfpUrl: farcasterPfp,
+            moves,
+            time: timer,
+            address: address || '',
+            createdAt: Date.now(),
+          });
+        } catch (err) {
+          // Optionally handle error
+        }
+        setSubmittingScore(false);
+        // Optionally fetch leaderboard after submit
+        fetchLeaderboard();
+      })();
     }
   }, [matched, cards]);
 
@@ -368,9 +400,27 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
     setShareGameLoading(false);
   };
 
+  // Fetch leaderboard entries
+  async function fetchLeaderboard() {
+    const q = query(collection(db, "memoryLeaderboard"), orderBy("moves", "asc"), orderBy("time", "asc"), limit(20));
+    const snapshot = await getDocs(q);
+    setLeaderboard(snapshot.docs.map(doc => doc.data()));
+  }
+
   return (
     <div id="memory-game-root" className="fixed inset-0 z-50 min-h-screen w-full !bg-black flex flex-col items-center justify-center overflow-auto">
-      {/* Info Icon and Modal */}
+      {/* Leaderboard Button (top left) and Info Icon (top right) */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50">
+        <button
+          onClick={() => {
+            setShowLeaderboard(true);
+            fetchLeaderboard();
+          }}
+          className="text-yellow-300 hover:text-yellow-400 font-bold text-lg bg-gray-800 px-4 py-1 rounded-full border border-yellow-700 shadow transition"
+        >
+          Leaderboard
+        </button>
+      </div>
       <div className="absolute top-4 right-4 z-50">
         <button onClick={() => setShowInfo(true)} className="text-blue-400 hover:text-blue-600 text-2xl" title="How to play">
           <FaInfoCircle />
@@ -393,6 +443,55 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
               <li>Try to match all pairs with the fewest moves and in the shortest time.</li>
               <li>Your score increases with each match. Good luck!</li>
             </ul>
+          </div>
+        </div>
+      )}
+      {/* Leaderboard Modal */}
+      {showLeaderboard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl p-6 w-[370px] max-h-[80vh] flex flex-col items-center relative border border-yellow-400">
+            <button
+              className="absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full bg-gray-800 hover:bg-yellow-100 border border-yellow-200 text-yellow-400 text-xl font-bold shadow-sm transition"
+              onClick={() => setShowLeaderboard(false)}
+              aria-label="Close"
+            >
+              ×
+            </button>
+            <div className="text-2xl font-bold text-yellow-300 mb-2 tracking-wide">Leaderboard</div>
+            <div className="w-full overflow-y-auto">
+              {submittingScore && (
+                <div className="text-yellow-200 text-center py-4">Submitting your score...</div>
+              )}
+              {leaderboard.length === 0 && !submittingScore && (
+                <div className="text-gray-400 text-center py-4">No entries yet. Be the first!</div>
+              )}
+              <table className="w-full text-left mt-2">
+                <thead>
+                  <tr className="text-yellow-400 text-sm border-b border-yellow-800">
+                    <th className="py-1">#</th>
+                    <th className="py-1">Player</th>
+                    <th className="py-1">Moves</th>
+                    <th className="py-1">Time</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {leaderboard.map((entry, idx) => {
+                    const isCurrent = entry.address === address && entry.moves === moves && entry.time === timer;
+                    return (
+                      <tr key={idx} className={isCurrent ? "bg-yellow-900/40" : "hover:bg-gray-800/60 transition"}>
+                        <td className="py-1 px-2 text-yellow-300 font-bold">{idx + 1}</td>
+                        <td className="py-1 px-2 flex items-center gap-2">
+                          <img src={entry.pfpUrl} alt="pfp" className="w-7 h-7 rounded-full border-2 border-yellow-400 bg-gray-700" />
+                          <span className="text-yellow-100 font-semibold truncate max-w-[100px]">{entry.name}</span>
+                        </td>
+                        <td className="py-1 px-2 text-yellow-200 font-mono">{entry.moves}</td>
+                        <td className="py-1 px-2 text-yellow-200 font-mono">{formatTime(entry.time)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}
