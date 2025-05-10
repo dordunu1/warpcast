@@ -119,7 +119,7 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
   const [newDonation, setNewDonation] = useState({
     title: '',
     description: '',
-    goalAmount: 0,
+    goalAmount: '',
     endDate: '',
     endTime: '12:00',
     isGoalBased: true,
@@ -154,6 +154,9 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
   const [sortOrder, setSortOrder] = useState<'high' | 'low'>('high');
 
   const [showOnboarding, setShowOnboarding] = useState(true);
+
+  // Add isCreating state
+  const [isCreating, setIsCreating] = useState(false);
 
   // Load campaigns from Firestore on mount
   useEffect(() => {
@@ -204,7 +207,7 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
     const errs: {[key:string]: string} = {};
     if (!newDonation.title.trim()) errs.title = 'Title is required.';
     if (!newDonation.description.trim()) errs.description = 'Description is required.';
-    if (!newDonation.goalAmount || newDonation.goalAmount <= 0) errs.goalAmount = 'Goal must be greater than 0.';
+    if (!newDonation.goalAmount || isNaN(Number(newDonation.goalAmount)) || Number(newDonation.goalAmount) <= 0) errs.goalAmount = 'Goal must be greater than 0.';
     if (!isValidAddress(newDonation.donationAddress)) errs.donationAddress = 'Invalid address.';
     if (!newDonation.isGoalBased && !newDonation.endDate) errs.endDate = 'End date is required.';
     return errs;
@@ -215,11 +218,11 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
     setErrors(errs);
     if (Object.keys(errs).length > 0) return;
     if (!address) return;
-
+    setIsCreating(true);
     try {
       // 1. Create campaign in smart contract
       const campaignId = Math.random().toString(36).substr(2, 9);
-      const goalAmount = parseEther(newDonation.goalAmount.toString());
+      const goalAmount = parseEther(Number(newDonation.goalAmount).toString());
       
       const createTx = await createCampaignContract({
         abi: DONATION_CONTRACT_ABI,
@@ -233,14 +236,14 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
         id: campaignId,
         title: newDonation.title,
         description: newDonation.description,
-        goalAmount: newDonation.goalAmount,
+        goalAmount: Number(newDonation.goalAmount),
         currentAmount: 0,
         creatorAddress: newDonation.donationAddress,
         isActive: true,
         isGoalBased: newDonation.isGoalBased,
         avatarUrl: farcasterPfp || `https://api.dicebear.com/7.x/notionists/svg?seed=${farcasterName || address}`,
         ...(newDonation.isGoalBased ? {} : {
-          endDate: new Date(newDonation.endDate + 'T' + (newDonation.endTime || '00:00')).toISOString()
+          endDate: newDonation.endDate ? new Date(newDonation.endDate + 'T' + (newDonation.endTime || '00:00')).toISOString() : undefined
         }),
         createdAt: Date.now(),
         firestoreId: '',
@@ -257,18 +260,20 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
       setNewDonation({
         title: '',
         description: '',
-        goalAmount: 0,
+        goalAmount: '',
         endDate: '',
         endTime: '12:00',
         isGoalBased: true,
         donationAddress: farcasterAddress,
         cardColor: '#f9fafb',
       });
+      setIsCreating(false);
       setErrors({});
 
     } catch (err) {
       console.error('Campaign creation failed:', err);
       setErrors({ submit: 'Failed to create campaign. Please try again.' });
+      setIsCreating(false);
     }
   };
 
@@ -475,11 +480,7 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
         </div>
         {/* Tabs and sort UI */}
         <div className="flex items-center justify-between mb-6">
-          <div className="flex gap-2">
-            <button onClick={() => setActiveTab('ongoing')} className={`px-3 py-1 rounded-full text-sm font-semibold ${activeTab === 'ongoing' ? 'bg-pink-500 text-white' : 'bg-gray-100 text-gray-700'}`}>🟢</button>
-            <button onClick={() => setActiveTab('halfway')} className={`px-3 py-1 rounded-full text-sm font-semibold ${activeTab === 'halfway' ? 'bg-green-500 text-white' : 'bg-gray-100 text-gray-700'}`}>🌓</button>
-            <button onClick={() => setActiveTab('ended')} className={`px-3 py-1 rounded-full text-sm font-semibold ${activeTab === 'ended' ? 'bg-gray-400 text-white' : 'bg-gray-100 text-gray-700'}`}>🔴</button>
-          </div>
+          <div></div>
           <div className="flex items-center gap-1">
             <select value={sortOrder} onChange={e => setSortOrder(e.target.value as 'high' | 'low')} className="text-xs rounded px-2 py-1 border border-gray-200 bg-white focus:outline-none">
               <option value="high">High to Low</option>
@@ -488,7 +489,7 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
           </div>
         </div>
         {/* Show campaigns for the active tab */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {activeTab === 'ongoing' && sortCampaigns(ongoingCampaigns).length === 0 && (
             <div className="col-span-2 text-center text-gray-400 text-xl py-16">No ongoing campaigns.</div>
           )}
@@ -504,7 +505,7 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
           ).map(card => (
             <button
               key={card.id}
-              className="bg-white rounded-lg shadow-xl border border-gray-100 flex flex-col justify-between aspect-square overflow-hidden p-5 min-w-[160px] min-h-[160px] text-left cursor-pointer focus:outline-none text-sm relative"
+              className="bg-white rounded-lg shadow-xl border border-gray-100 flex flex-col overflow-hidden p-6 min-w-[200px] text-left cursor-pointer focus:outline-none text-base relative"
               style={{ background: card.cardColor || '#f9fafb' }}
               onClick={() => setSelectedCard(card)}
             >
@@ -513,13 +514,15 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
                 alt="Creator Avatar"
                 className="w-10 h-10 rounded-full border-2 border-pink-200 absolute top-3 left-3 z-10"
               />
+              {/* Status icon in top right */}
+              <span className={`absolute top-3 right-3 w-5 h-5 rounded-full border-2 border-white shadow ${!isCampaignEnded(card) ? 'bg-green-400 shadow-[0_0_8px_2px_rgba(34,197,94,0.7)]' : 'bg-red-400 shadow-[0_0_8px_2px_rgba(239,68,68,0.7)]'}`}></span>
               <div className="pl-12 pt-1 w-full">
                 <h3 className="font-semibold text-base text-gray-800 truncate w-full" style={{maxWidth: '100%'}}>{card.title}</h3>
                 <span className={`inline-block px-1.5 py-0.5 rounded bg-pink-100 text-pink-700 text-[10px] font-semibold whitespace-nowrap ${card.isGoalBased ? '' : 'bg-blue-100 text-blue-700'}`}>{card.isGoalBased ? 'Goal-based' : 'Time-based'}</span>
               </div>
-              <p className="text-gray-600 mb-4 line-clamp-3 text-xs">{card.description}</p>
-              <div className="mb-4">
-                <div className="flex justify-between items-center text-xs mb-2">
+              <p className="text-gray-600 mb-4 line-clamp-5 text-xs">{card.description}</p>
+              <div className="mb-2">
+                <div className="flex justify-between items-center text-xs mb-1">
                   <span>Prog.</span>
                   <span className="font-bold whitespace-nowrap">
                     {Number(card.currentAmount).toFixed(2)} / {Number(card.goalAmount).toFixed(0)} <span className="font-normal">MON</span>
@@ -532,17 +535,34 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
                   />
                 </div>
               </div>
-              <div className="mb-6 flex justify-center items-end h-8">
-                {!isCampaignEnded(card) ? (
-                  <span className="inline-block w-4 h-4 rounded-full bg-green-400 shadow-[0_0_8px_2px_rgba(34,197,94,0.7)] border-2 border-white"></span>
-                ) : (
-                  <span className="inline-block w-4 h-4 rounded-full bg-red-400 shadow-[0_0_8px_2px_rgba(239,68,68,0.7)] border-2 border-white"></span>
-                )}
-              </div>
             </button>
           ))}
         </div>
       </div>
+      {/* Bottom Navigation Bar */}
+      <nav className="fixed bottom-0 left-0 w-full bg-white border-t border-gray-200 shadow-lg z-40 flex justify-center items-center py-2 gap-8 md:gap-16" style={{maxWidth: '100vw'}}>
+        <button
+          onClick={() => setActiveTab('ongoing')}
+          className={`flex flex-col items-center px-2 focus:outline-none ${activeTab === 'ongoing' ? 'text-pink-600 font-bold' : 'text-gray-500'}`}
+        >
+          <span className="text-2xl mb-0.5">🟢</span>
+          <span className="text-xs">Ongoing</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('halfway')}
+          className={`flex flex-col items-center px-2 focus:outline-none ${activeTab === 'halfway' ? 'text-pink-600 font-bold' : 'text-gray-500'}`}
+        >
+          <span className="text-2xl mb-0.5">🌓</span>
+          <span className="text-xs">Halfway</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('ended')}
+          className={`flex flex-col items-center px-2 focus:outline-none ${activeTab === 'ended' ? 'text-pink-600 font-bold' : 'text-gray-400'}`}
+        >
+          <span className="text-2xl mb-0.5">🔴</span>
+          <span className="text-xs">Ended</span>
+        </button>
+      </nav>
       {/* Create Donation Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -579,16 +599,21 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
                 <button type="button" onClick={() => setEditingAddress(e => !e)} className="text-gray-400 hover:text-pink-400 px-1" title="Edit address">
                   ✏️
                 </button>
-                <button type="button" onClick={() => setShowAddressInfo(v => !v)} className="text-gray-400 hover:text-pink-400 px-1" title="About address">
-                  <span className="bg-blue-500 text-white rounded-full px-1">i</span>
-                </button>
-                {showAddressInfo && (
-                  <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded shadow-lg p-3 w-64 z-50 text-xs text-gray-700">
-                    <div className="font-bold mb-1">Donation Address</div>
-                    This is the address where donations will be sent. You can use your connected Farcaster wallet or enter a different ERC20/Monad address.
-                    <button className="mt-2 text-pink-500 hover:underline" onClick={() => setShowAddressInfo(false)}>Close</button>
-                  </div>
-                )}
+                <span className="relative">
+                  <button type="button" onClick={() => setShowAddressInfo(v => !v)} className="text-gray-400 hover:text-pink-400 px-1" title="About address">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10" stroke="#3b82f6" strokeWidth="2" fill="#e0e7ff" />
+                      <path d="M12 8v4m0 4h.01" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </button>
+                  {showAddressInfo && (
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-gray-200 rounded shadow-lg p-3 w-64 z-50 text-xs text-gray-700">
+                      <div className="font-bold mb-1">Donation Address</div>
+                      This is the address where donations will be sent. You can use your connected Farcaster wallet or enter a different ERC20/Monad address.
+                      <button className="mt-2 text-pink-500 hover:underline" onClick={() => setShowAddressInfo(false)}>Close</button>
+                    </div>
+                  )}
+                </span>
               </div>
               {errors.donationAddress && <div className="text-xs text-red-500 mt-1">{errors.donationAddress}</div>}
             </div>
@@ -620,25 +645,32 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-1">
                   <label className="font-semibold">Goal Amount (MON) <span className="text-red-500">*</span></label>
-                  <button type="button" onClick={() => setShowGoalInfo(v => !v)} className="text-gray-400 hover:text-pink-400" title="About goal">
-                    <span className="bg-blue-500 text-white rounded-full px-1">i</span>
-                  </button>
+                  <span className="relative">
+                    <button type="button" onClick={() => setShowGoalInfo(v => !v)} className="text-gray-400 hover:text-pink-400" title="About goal">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" stroke="#3b82f6" strokeWidth="2" fill="#e0e7ff" />
+                        <path d="M12 8v4m0 4h.01" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </button>
+                    {showGoalInfo && (
+                      <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 bg-white border border-gray-200 rounded shadow-lg p-3 w-64 z-50 text-xs text-gray-700">
+                        <div className="font-bold mb-1">Goal Amount</div>
+                        The total amount of MON tokens you want to raise for this campaign.
+                        <button className="mt-2 text-pink-500 hover:underline" onClick={() => setShowGoalInfo(false)}>Close</button>
+                      </div>
+                    )}
+                  </span>
                 </div>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="^[0-9]*[.,]?[0-9]*$"
                   placeholder="Goal Amount (MON)"
                   className="w-full p-2 border rounded-lg"
-                  value={newDonation.goalAmount}
-                  onChange={(e) => setNewDonation({...newDonation, goalAmount: Number(e.target.value)})}
+                  value={newDonation.goalAmount === '' ? '' : String(newDonation.goalAmount)}
+                  onChange={(e) => setNewDonation({...newDonation, goalAmount: e.target.value})}
                   required
                 />
-                {showGoalInfo && (
-                  <div className="absolute top-8 left-1/2 -translate-x-1/2 bg-white border border-gray-200 rounded shadow-lg p-3 w-64 z-50 text-xs text-gray-700">
-                    <div className="font-bold mb-1">Goal Amount</div>
-                    The total amount of MON tokens you want to raise for this campaign.
-                    <button className="mt-2 text-pink-500 hover:underline" onClick={() => setShowGoalInfo(false)}>Close</button>
-                  </div>
-                )}
                 {errors.goalAmount && <div className="text-xs text-red-500 mt-1">{errors.goalAmount}</div>}
               </div>
               <div className="mb-4">
@@ -714,10 +746,10 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
               </button>
               <button
                 onClick={handleCreate}
-                className={`px-4 py-2 bg-gradient-to-r from-pink-500 to-green-400 text-white rounded-lg ${(!newDonation.goalAmount || newDonation.goalAmount <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
-                disabled={!newDonation.goalAmount || newDonation.goalAmount <= 0}
+                className={`px-4 py-2 bg-gradient-to-r from-pink-500 to-green-400 text-white rounded-lg ${(isCreating || !newDonation.goalAmount || Number(newDonation.goalAmount) <= 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={isCreating || !newDonation.goalAmount || Number(newDonation.goalAmount) <= 0}
               >
-                Create Campaign
+                {isCreating ? 'Creating...' : 'Create Campaign'}
               </button>
             </div>
           </div>
@@ -874,7 +906,7 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
                 onClick={handleDonate}
                 disabled={isDonating || !donationAmount}
               >
-                {isDonating ? 'Processing...' : 'Confirm Donation'}
+                {isDonating ? 'Donating...' : 'Confirm Donation'}
               </button>
             </div>
           </div>

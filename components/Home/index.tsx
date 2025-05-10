@@ -16,8 +16,8 @@ const apps = [
   {
     key: "art",
     icon: "🎨",
-    label: "Artistic Scenes",
-    desc: "Create and share your art!",
+    label: "NFT Launchpad",
+    desc: "Launch your NFT collection with ease",
   },
   {
     key: "donation",
