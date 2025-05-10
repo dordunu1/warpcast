@@ -250,7 +250,9 @@ export default function DonationApp({ onBack }: { onBack?: () => void }) {
         cardColor: newDonation.cardColor,
       };
 
-      await addDoc(collection(db, "donationCampaigns"), newCard);
+      const docRef = await addDoc(collection(db, "donationCampaigns"), newCard);
+      newCard.firestoreId = docRef.id;
+      await updateDoc(docRef, { firestoreId: docRef.id });
       
       // 3. Update UI
       setDonationCards(prev => [...prev, newCard]);
