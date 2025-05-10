@@ -97,6 +97,19 @@ const NFT_WHITELIST_ABI = [
   }
 ];
 
+// Add minimal ABI for totalSupply
+const NFT_TOTAL_SUPPLY_ABI = [
+  {
+    "inputs": [],
+    "name": "totalSupply",
+    "outputs": [
+      { "internalType": "uint256", "name": "", "type": "uint256" }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+];
+
 function TraitsSection({ traits }: { traits: any[] }) {
   const [expanded, setExpanded] = React.useState(false);
   const showExpand = traits.length > 3;
@@ -155,6 +168,13 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
     abi: NFT_READ_ABI,
     functionName: "mintedPerWallet",
     args: address && selectedCollection?.contractAddress ? [address] : undefined,
+  });
+
+  // Fetch total minted from contract
+  const { data: totalMinted } = useContractRead({
+    address: selectedCollection?.contractAddress as `0x${string}` | undefined,
+    abi: NFT_TOTAL_SUPPLY_ABI,
+    functionName: "totalSupply",
   });
 
   // Mint progress steps
@@ -547,11 +567,11 @@ export default function ArtisticScenesLanding({ onBack }: { onBack?: () => void 
                       {/* Mint Progress Bar */}
                       <div className="w-full mt-1">
                         <div className="flex justify-between text-xs text-gray-500 mb-1">
-                          <span>{minted} minted</span>
+                          <span>{Number(totalMinted || 0)} minted</span>
                           <span>Max: {selectedCollection.totalSupply || '--'}</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-3">
-                          <div className="bg-gradient-to-r from-pink-500 to-blue-400 h-3 rounded-full" style={{ width: `${Math.min(100, (minted / maxPerWallet) * 100)}%` }} />
+                          <div className="bg-gradient-to-r from-pink-500 to-blue-400 h-3 rounded-full" style={{ width: `${Math.min(100, (Number(totalMinted || 0) / Number(selectedCollection.totalSupply || 1)) * 100)}%` }} />
                         </div>
                       </div>
                     </div>
