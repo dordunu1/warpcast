@@ -8,7 +8,7 @@ import html2canvas from "html2canvas";
 import { FaInfoCircle } from "react-icons/fa";
 import { useFrame } from "../farcaster-provider";
 import { db } from '../../lib/firebase-config';
-import { collection, addDoc, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, orderBy, limit, setDoc, doc, getDoc } from 'firebase/firestore';
 
 const CARD_IMAGES = Array.from({ length: 8 }, (_, i) => `/images/${i + 1}.jpeg`);
 const TOTAL_PAIRS = 8;
@@ -105,23 +105,51 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
       setIsActive(false);
       setMessage("Congratulations! You won!");
 
-      // Submit leaderboard entry
+      // Submit leaderboard entry (one per user, only if better)
       (async () => {
         setSubmittingScore(true);
         try {
-          await addDoc(collection(db, "memoryLeaderboard"), {
-            name: farcasterName,
-            pfpUrl: farcasterPfp,
-            moves,
-            time: timer,
-            address: address || '',
-            createdAt: Date.now(),
-          });
+          if (address) {
+            const userDocRef = doc(db, "memoryLeaderboard", address);
+            const existingDoc = await getDoc(userDocRef);
+            let shouldUpdate = false;
+            if (!existingDoc.exists()) {
+              shouldUpdate = true;
+            } else {
+              const data = existingDoc.data();
+              if (
+                moves < data.moves ||
+                (moves === data.moves && timer < data.time)
+              ) {
+                shouldUpdate = true;
+              }
+            }
+            if (shouldUpdate) {
+              await setDoc(userDocRef, {
+                name: farcasterName,
+                pfpUrl: farcasterPfp,
+                moves,
+                time: timer,
+                address: address || '',
+                createdAt: Date.now(),
+              });
+            }
+          } else {
+            // fallback for no address (anonymous)
+            await addDoc(collection(db, "memoryLeaderboard"), {
+              name: farcasterName,
+              pfpUrl: farcasterPfp,
+              moves,
+              time: timer,
+              address: '',
+              createdAt: Date.now(),
+            });
+          }
         } catch (err) {
-          // Optionally handle error
+          console.error("Failed to write leaderboard entry:", err);
+          setMessage("Failed to save your score. Please try again!");
         }
         setSubmittingScore(false);
-        // Optionally fetch leaderboard after submit
         fetchLeaderboard();
       })();
     }
