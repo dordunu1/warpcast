@@ -49,6 +49,9 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
   const [leaderboard, setLeaderboard] = useState<any[]>([]);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [submittingScore, setSubmittingScore] = useState(false);
+  // Pagination state for leaderboard
+  const [lastVisibleLeaderboardDoc, setLastVisibleLeaderboardDoc] = useState<any>(null);
+  const [hasMoreLeaderboard, setHasMoreLeaderboard] = useState(true);
 
   const { data, isSuccess, isError, sendTransaction } = useSendTransaction();
   const { switchChain, error: switchError } = useSwitchChain();
@@ -428,11 +431,40 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
     setShareGameLoading(false);
   };
 
-  // Fetch leaderboard entries
-  async function fetchLeaderboard() {
-    const q = query(collection(db, "memoryLeaderboard"), orderBy("moves", "asc"), orderBy("time", "asc"), limit(20));
+  // Fetch leaderboard entries with pagination
+  async function fetchLeaderboard(loadMore = false) {
+    const { collection, query, orderBy, limit, startAfter, getDocs } = await import('firebase/firestore');
+    const leaderboardRef = collection(db, "memoryLeaderboard");
+    let q;
+    if (loadMore && lastVisibleLeaderboardDoc) {
+      q = query(
+        leaderboardRef,
+        orderBy("moves", "asc"),
+        orderBy("time", "asc"),
+        startAfter(lastVisibleLeaderboardDoc),
+        limit(20)
+      );
+    } else {
+      q = query(
+        leaderboardRef,
+        orderBy("moves", "asc"),
+        orderBy("time", "asc"),
+        limit(20)
+      );
+    }
     const snapshot = await getDocs(q);
-    setLeaderboard(snapshot.docs.map(doc => doc.data()));
+    const docs = snapshot.docs.map(doc => doc.data());
+    if (loadMore) {
+      setLeaderboard(prev => [...prev, ...docs]);
+    } else {
+      setLeaderboard(docs);
+    }
+    if (snapshot.docs.length < 20) {
+      setHasMoreLeaderboard(false);
+    } else {
+      setHasMoreLeaderboard(true);
+      setLastVisibleLeaderboardDoc(snapshot.docs[snapshot.docs.length - 1]);
+    }
   }
 
   return (
@@ -519,6 +551,14 @@ export default function MemoryGame({ onBack }: { onBack?: () => void }) {
                   })}
                 </tbody>
               </table>
+              {hasMoreLeaderboard && !submittingScore && (
+                <button
+                  className="mt-4 w-full bg-yellow-700 hover:bg-yellow-800 text-yellow-100 font-bold py-2 rounded-lg transition"
+                  onClick={() => fetchLeaderboard(true)}
+                >
+                  Show More
+                </button>
+              )}
             </div>
           </div>
         </div>
